@@ -24,6 +24,3 @@ Thumbs.db
 coverage/
 .eslintcache
 .turbo/
-
-# Drizzle / dados locais
-drizzle/meta/

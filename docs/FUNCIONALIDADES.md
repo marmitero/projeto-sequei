@@ -82,8 +82,21 @@ Regras do servidor (`addFoodEntries`): lote de até 30 itens, datas validadas, g
 
 ## 9. Meu perfil (`/perfil`)
 
+- **Conta e backup** (topo da página):
+  - Sem conta: convite para **Criar conta** (`/cadastro`) ou **Entrar** (`/login`).
+  - Com conta: e-mail conectado e **Sair da conta**.
+  - **Exportar dados**: backup JSON completo (perfil + todos os registros) e CSVs por área (perfil, alimentação, água, treinos, métricas) via `GET /api/export`.
+  - **Restaurar backup**: importa um backup JSON — registros são adicionados ao histórico (métricas do mesmo dia são atualizadas; perfil é restaurado se presente no arquivo).
 - Mesmo wizard do onboarding em modo `edit` (pré-preenchido; aceite já marcado) — qualquer alteração recalcula metas, cardápio, treino e hidratação.
-- **Apagar dados**: `resetAccount` remove o usuário e todo o histórico (cascade) e limpa o cookie (com confirmação no navegador).
+- **Apagar dados**: `resetAccount` remove o perfil e todo o histórico (cascade) e limpa o cookie (com confirmação no navegador).
+
+## 9.1 Conta (`/login` e `/cadastro`)
+
+- **Cadastro**: e-mail + senha (mínimo 8 caracteres). O perfil já registrado no navegador é **vinculado automaticamente** à conta.
+- **Login**: sessão de 30 dias (cookie `fit_session`, token hasheado no banco). Em outro dispositivo, o perfil da conta é carregado automaticamente — sem depender do cookie local.
+- **Logout**: revoga a sessão e limpa os cookies de identidade do navegador.
+- **Proteção**: senhas com scrypt (salt por usuário, comparação em tempo constante); rate limiting por e-mail e por IP em registro e login (mensagens de "muitas tentativas").
+- Links cruzados: onboarding → "Já tem conta? Entrar"; login ↔ cadastro; "Continuar sem conta" mantém o modo anônimo.
 
 ## 10. API
 

@@ -135,3 +135,27 @@ Após as correções da [Fase 0](./PLANEJAMENTO.md), toda a bateria foi re-execu
 **Nota de comportamento:** um `loading.tsx` na raiz do app fazia o redirect sem cookie virar navegação client-side (HTTP 200 + stream). Decisão: manter o skeleton apenas em `(app)/loading.tsx` (onde as queries acontecem) e **não** ter `loading.tsx` na raiz — assim o redirect do layout continua sendo 307 (funciona sem JS e é mais limpo). O `error.tsx` e o `not-found.tsx` ficam na raiz.
 
 **Itens P0 entregues:** lint zerado · build sem banco · `drizzle.config.ts` com `DATABASE_URL` do ambiente (credenciais hardcoded removidas) · `package.json` renomeado para `fitvida@0.1.0` · `error.tsx`/`(app)/loading.tsx`/`not-found.tsx` · whitelist de enums e arrays em `saveProfile`/`logWorkout` · `.gitignore`/`.env.example`/README/docs.
+
+## 11. Revalidação após a Fase 1 (2026-10-24)
+
+Fase 1 implementada (conta/sessão, migrações versionadas, seed, Vitest + E2E no repo, CI, export/import, rate limiting, headers). Bateria completa re-executada no mesmo ambiente:
+
+| Etapa | Resultado |
+|---|---|
+| `npm run typecheck` | ✅ 0 erros |
+| `npm run lint` | ✅ 0 erros |
+| `npm run build` sem `DATABASE_URL` | ✅ (inclui middleware registrado) |
+| `npm test` (Vitest, `tests/unit`) | ✅ **39/39** (32 portados + 7 novos: password scrypt, ratelimit) |
+| Migrações em banco zerado (`npm run db:migrate`) | ✅ 6 tabelas criadas a partir do SQL versionado |
+| `npm run db:seed` (idempotente) | ✅ conta demo + perfil + registros |
+| `npm run test:e2e` (`tests/e2e`, servidor real) | ✅ **31/31** (18 fluxos + 13 conta/backup/segurança) |
+| Headers de segurança (middleware) | ✅ `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` |
+| Login da conta demo via Server Action | ✅ `fit_session` (30 d) + `fituid`, `"ok":true` |
+
+**Novos casos E2E da Fase 1:** registro reivindicando perfil anônimo · login em "outro dispositivo" resolvendo o perfil só com a sessão · e-mail duplicado/senha curta rejeitados · senha errada · logout revogando a sessão · export JSON (perfil + histórico) e CSV por tipo (400 para tipo inválido, 401 sem sessão) · `importData` restaurando registros · rate limit de login e registro disparando · `resetAccount` de conta logada.
+
+**Bugs reais encontrados pelos testes e corrigidos nesta fase:**
+1. `requireUser()` resolvia apenas o cookie anônimo — writes falhavam para usuários logados por sessão em outro dispositivo (ex.: `importData`). Corrigido para resolver via `getUser()` (conta → cookie).
+2. Links/testes de CSV apontavam para `/api/export/csv` (rota inexistente) em vez de `?format=csv` — 404. Corrigido.
+
+**Escopo de CI:** `.github/workflows/ci.yml` roda typecheck → lint → build (sem banco) → testes unitários → `db:migrate` → `db:seed` → servidor de produção → E2E, com serviço PostgreSQL 16.

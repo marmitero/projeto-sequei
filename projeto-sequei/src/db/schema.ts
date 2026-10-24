@@ -12,10 +12,36 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 
-export const users = pgTable("users", {
+/** Conta de acesso (login). 1 conta ↔ 1 perfil (`users`). */
+export const accounts = pgTable("accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  sex: text("sex").notNull(), // M | F
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+/** Sessões ativas (token hasheado — permite logout e revogação). */
+export const sessions = pgTable(
+  "sessions",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("sessions_account").on(t.accountId)],
+);
+
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    accountId: uuid("account_id").references(() => accounts.id, { onDelete: "set null" }),
+    name: text("name").notNull(),
+    sex: text("sex").notNull(), // M | F
   birthDate: date("birth_date", { mode: "string" }).notNull(),
   heightCm: real("height_cm").notNull(),
   weightKg: real("weight_kg").notNull(),
@@ -43,7 +69,9 @@ export const users = pgTable("users", {
   timezone: text("timezone").notNull().default("America/Sao_Paulo"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+  },
+  (t) => [uniqueIndex("users_account").on(t.accountId)],
+);
 
 export const foodLogs = pgTable(
   "food_logs",
@@ -135,6 +163,8 @@ export const metrics = pgTable(
   (t) => [uniqueIndex("metrics_user_date").on(t.userId, t.date)],
 );
 
+export type Account = typeof accounts.$inferSelect;
+export type Session = typeof sessions.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type FoodLog = typeof foodLogs.$inferSelect;
 export type WaterLog = typeof waterLogs.$inferSelect;

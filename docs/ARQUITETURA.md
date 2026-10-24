@@ -53,10 +53,16 @@ src/
 
 ## 3. Modelo de dados (PostgreSQL)
 
-`npx drizzle-kit push` aplica o schema diretamente (sem arquivos de migração).
+`drizzle/` guarda as **migrações SQL versionadas** (`npm run db:migrate`); `npx drizzle-kit push` continua funcionando para dev rápido. `npm run db:generate` cria nova migração ao mudar o schema.
+
+### `accounts` — conta de acesso (opcional)
+UUID PK, `email` (único, minúsculo), `password_hash` (scrypt com salt), `created_at`, `updated_at`.
+
+### `sessions` — sessões ativas
+`token_hash` (SHA-256 do token do cookie) PK, `account_id` (FK → accounts, **cascade**), `expires_at` (30 dias), `created_at`. Permite revogação (logout).
 
 ### `users` — perfil (1 linha por usuário)
-UUID PK (`defaultRandom`). Colunas: `name`, `sex` (M|F), `birth_date`, `height_cm`, `weight_kg`, `target_weight_kg`, `goal` (perder|manter|ganhar|recomp), `pace` (leve|moderado|agressivo), `activity_level`, `experience`, `training_days`, `session_minutes`, `location`, `equipment[]`, `cardio_prefs[]`, `injuries[]`, `diet`, `carb_approach`, `restrictions[]`, `dislikes`, `health_conditions[]`, `meals_per_day`, `wake_time`, `sleep_time`, `training_time`, `climate`, `timezone`, `created_at`, `updated_at`.
+UUID PK (`defaultRandom`), `account_id` (FK → accounts, **set null**, **índice único** — 1 perfil por conta). Colunas: `name`, `sex` (M|F), `birth_date`, `height_cm`, `weight_kg`, `target_weight_kg`, `goal` (perder|manter|ganhar|recomp), `pace` (leve|moderado|agressivo), `activity_level`, `experience`, `training_days`, `session_minutes`, `location`, `equipment[]`, `cardio_prefs[]`, `injuries[]`, `diet`, `carb_approach`, `restrictions[]`, `dislikes`, `health_conditions[]`, `meals_per_day`, `wake_time`, `sleep_time`, `training_time`, `climate`, `timezone`, `created_at`, `updated_at`.
 
 ### `food_logs` — itens do diário
 `serial` PK, `user_id` (FK → users, **cascade**), `date`, `meal` (cafe|lanche_manha|almoco|lanche_tarde|jantar|ceia), `food_key?`, `recipe_key?`, `name`, `grams`, `portion_label`, `kcal`, `protein`, `carbs`, `fat`, `fiber`, `created_at`. Índice `(user_id, date)`. Nutrientes são **cópia congelada** no momento do registro (a base pode evoluir sem corromper o histórico).
@@ -72,9 +78,14 @@ UUID PK (`defaultRandom`). Colunas: `name`, `sex` (M|F), `birth_date`, `height_c
 
 ## 4. Sessão e identidade
 
-- Cookie `fituid` = UUID do usuário (`httpOnly`, `sameSite=lax`, `path=/`, `maxAge` 2 anos). `getUserId()` valida o formato; `getUser()` busca no banco.
+- **Modo anônimo**: cookie `fituid` = UUID do perfil (`httpOnly`, `sameSite=lax`, 2 anos).
+- **Modo conta**: cookie `fit_session` = token aleatório (30 dias); apenas o SHA-256 é persistido em `sessions`. Logout revoga o token.
+- **Resolução de usuário** (`getUser()`): 1) sessão → `accounts` → `users.account_id`; 2) fallback cookie `fituid`; 3) `null`. Assim o login em outro dispositivo recupera o mesmo perfil sem cookie local.
+- **Claim do anônimo**: ao registrar/entrar sem perfil na conta, o perfil do cookie `fituid` (se não vinculado) é reivindicado (`users.account_id`).
 - `getContext()` (usado por todas as páginas): usuário + `toProfile()` + `computeTargets()` + `todayIn(timezone)` — sem usuário → `redirect("/onboarding")`.
-- Não há autenticação, contas ou recuperação: **quem tem o cookie tem os dados**.
+- `requireUser()` (todas as writes) resolve via `getUser()` — funciona em ambos os modos.
+- **Senhas**: scrypt (N=16384, r=8, p=1, 64 bytes) com salt por usuário e comparação em tempo constante (`src/lib/password.ts`).
+- **Rate limiting** (`src/lib/ratelimit.ts`, janela deslizante em memória): registro 3/10 min por e-mail + 30/10 min por IP; login 10/5 min por e-mail + 60/5 min por IP; importação 10/min.
 
 ## 5. Regras de cálculo (`src/lib/calc.ts`)
 
@@ -123,15 +134,18 @@ UUID PK (`defaultRandom`). Colunas: `name`, `sex` (M|F), `birth_date`, `height_c
 
 ## 8. Segurança e validação (como está)
 
-- Server Actions exigem `Origin` compatível (proteção CSRF nativa do Next) e `requireUser` (perfil via cookie).
-- Entradas sanitizadas: `num()` com clamp por campo, `isDate()` por regex, strings truncadas (nome 60, notes 300–500), lote ≤ 30 itens, `exercises` ≤ 20, métricas por faixa (ex. peso 30–300, sono 0–16 h).
+- Server Actions exigem `Origin` compatível (proteção CSRF nativa do Next) e `requireUser` (perfil via sessão ou cookie).
+- Entradas sanitizadas: `num()` com clamp por campo, `isDate()`/`isTime()` por regex, strings truncadas, **whitelists de enums/arrays** (`profileValues`), lote ≤ 30 itens, `exercises` ≤ 20, métricas por faixa.
 - Deletes sempre escopados por `user_id` (não há IDOR entre usuários).
-- Cookies `httpOnly`/`sameSite`; sem headers de segurança customizados, sem rate limiting, sem logs de auditoria (ver [PLANEJAMENTO.md](./PLANEJAMENTO.md)).
+- Cookies `httpOnly`/`sameSite`; senhas scrypt; sessões revogáveis; rate limiting em auth/import.
+- `src/middleware.ts` define headers "helmet-like" em todas as respostas: `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `X-DNS-Prefetch-Control` e `Strict-Transport-Security` em produção.
+- Export exige usuário autenticado (401 sem sessão/perfil). Sem logs de auditoria (ver [PLANEJAMENTO.md](./PLANEJAMENTO.md)).
 
 ## 9. Infra e configuração
 
-- `DATABASE_URL` obrigatória — validada na importação de `src/db/index.ts` (**também em build**, ver [TESTES.md](./TESTES.md)).
-- `drizzle.config.json` aponta para `postgresql://postgres:postgres@127.0.0.1:5432/app_db` fixo (credenciais hardcoded — ponto de melhoria).
-- Pool `pg` reutilizado via `globalThis` em dev; queries simples via Drizzle (`select/insert/update/delete/onConflictDoUpdate`).
-- Todas as rotas são **dinâmicas** (`force-dynamic` no layout do app / cookies); `/_not-found` é estática.
-- Health check: `GET /api/health` faz `select 1`.
+- `DATABASE_URL` obrigatória **em runtime** (validada na 1ª query via pool lazy em `src/db/index.ts`); `next build` roda sem banco.
+- `drizzle.config.ts` lê `DATABASE_URL` do ambiente/`.env` (via `dotenv`) e falha com mensagem clara se ausente.
+- Pool `pg` reutilizado via `globalThis` em dev; queries via Drizzle (`select/insert/update/delete/onConflictDoUpdate`).
+- Migrações versionadas em `drizzle/` (`db:migrate`/`db:generate`); seed demo (`db:seed`); testes em `tests/` (Vitest — unit e E2E via protocolo de Server Actions).
+- Todas as rotas do app são **dinâmicas** (cookies); `/_not-found` é estática; `/login` e `/cadastro` são dinâmicas.
+- APIs: `GET /api/health` (ping no banco) e `GET /api/export?format=json|csv&type=profile|foods|water|workouts|metrics` (backup).

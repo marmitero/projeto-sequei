@@ -1,20 +1,22 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { users, foodLogs, waterLogs, workoutLogs, metrics, type WorkoutExercise } from "@/db/schema";
-import { COOKIE, getUserId } from "@/lib/session";
+import { users, accounts, foodLogs, waterLogs, workoutLogs, metrics, type WorkoutExercise } from "@/db/schema";
+import { COOKIE, getUserId, getUser, getSessionAccount, startSession, endSession } from "@/lib/session";
 import type { Profile } from "@/lib/calc";
 import { FOOD_MAP, macrosFor } from "@/lib/foods";
 import { RECIPES, recipeNutrition } from "@/lib/recipes";
 import { CARDIO, EQUIPMENT_LABELS, INJURY_LABELS } from "@/lib/exercises";
+import { hashPassword, verifyPassword, validatePassword, normalizeEmail, isValidEmail } from "@/lib/password";
+import { rateLimit } from "@/lib/ratelimit";
 
 async function requireUser() {
-  const id = await getUserId();
-  if (!id) throw new Error("Perfil não encontrado");
-  return id;
+  const user = await getUser();
+  if (!user) throw new Error("Perfil não encontrado");
+  return user.id;
 }
 
 function done() {
@@ -47,8 +49,8 @@ const RESTRICTIONS = ["lactose", "gluten", "oleaginosas", "amendoim", "ovo", "fr
 const CONDITIONS = ["diabetes", "hipertensao", "colesterol", "hipotireoidismo", "renal", "gestante", "lactante"] as const;
 const WORKOUT_KINDS = ["forca", "cardio", "mobilidade", "esporte"] as const;
 
-export async function saveProfile(data: Profile) {
-  const values = {
+function profileValues(data: Profile) {
+  return {
     name: String(data.name).slice(0, 60).trim() || "Atleta",
     sex: data.sex === "F" ? "F" : "M",
     birthDate: isDate(data.birthDate) ? data.birthDate : "1995-01-01",
@@ -78,10 +80,15 @@ export async function saveProfile(data: Profile) {
     timezone: data.timezone || "America/Sao_Paulo",
     updatedAt: new Date(),
   };
-  const existing = await getUserId();
-  let id = existing;
-  if (existing) {
-    const r = await db.update(users).set(values).where(eq(users.id, existing)).returning({ id: users.id });
+}
+
+export async function saveProfile(data: Profile) {
+  const account = await getSessionAccount();
+  const values = { ...profileValues(data), ...(account ? { accountId: account.id } : {}) };
+  const current = await getUser();
+  let id = current?.id ?? null;
+  if (id) {
+    const r = await db.update(users).set(values).where(eq(users.id, id)).returning({ id: users.id });
     if (!r.length) id = null;
   }
   if (!id) {
@@ -94,9 +101,80 @@ export async function saveProfile(data: Profile) {
   return { ok: true };
 }
 
+async function clientKey(prefix: string) {
+  const h = await headers();
+  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() || "local";
+  return `${prefix}:${ip}`;
+}
+
+export async function registerAccount(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
+  const mail = normalizeEmail(email);
+  if (!isValidEmail(mail)) return { ok: false, error: "E-mail inválido." };
+  const pwdError = validatePassword(password);
+  if (pwdError) return { ok: false, error: pwdError };
+  const ipKey = await clientKey("register");
+  if (!rateLimit(`register:${mail}`, 3, 10 * 60_000) || !rateLimit(ipKey, 30, 10 * 60_000)) {
+    return { ok: false, error: "Muitas tentativas. Aguarde alguns minutos." };
+  }
+  const existing = await db.select({ id: accounts.id }).from(accounts).where(eq(accounts.email, mail)).limit(1);
+  if (existing.length) return { ok: false, error: "E-mail já cadastrado. Faça login." };
+
+  const r = await db.insert(accounts).values({ email: mail, passwordHash: hashPassword(password) }).returning({ id: accounts.id });
+  const accountId = r[0].id;
+
+  // Reivindica o perfil anônimo deste navegador, se existir
+  const anonId = await getUserId();
+  if (anonId) {
+    await db
+      .update(users)
+      .set({ accountId, updatedAt: new Date() })
+      .where(and(eq(users.id, anonId), isNull(users.accountId)));
+  }
+  await startSession(accountId);
+  done();
+  return { ok: true };
+}
+
+export async function loginAccount(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
+  const mail = normalizeEmail(email);
+  const ipKey = await clientKey("login");
+  if (!rateLimit(`login:${mail}`, 10, 5 * 60_000) || !rateLimit(ipKey, 60, 5 * 60_000)) {
+    return { ok: false, error: "Muitas tentativas de login. Aguarde alguns minutos." };
+  }
+  const rows = await db.select().from(accounts).where(eq(accounts.email, mail)).limit(1);
+  const account = rows[0];
+  if (!account || !verifyPassword(String(password ?? ""), account.passwordHash)) {
+    return { ok: false, error: "E-mail ou senha incorretos." };
+  }
+  await startSession(account.id);
+
+  // Sincroniza o cookie de perfil com o perfil da conta (se já existir)
+  const profile = await db.select({ id: users.id }).from(users).where(eq(users.accountId, account.id)).limit(1);
+  const store = await cookies();
+  if (profile[0]) {
+    store.set(COOKIE, profile[0].id, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365 * 2 });
+  } else {
+    // conta nova sem perfil: reivindica o perfil anônimo deste navegador, se houver
+    const anonId = await getUserId();
+    if (anonId) {
+      await db
+        .update(users)
+        .set({ accountId: account.id, updatedAt: new Date() })
+        .where(and(eq(users.id, anonId), isNull(users.accountId)));
+    }
+  }
+  done();
+  return { ok: true };
+}
+
+export async function logoutAccount() {
+  await endSession();
+  done();
+}
+
 export async function resetAccount() {
-  const id = await getUserId();
-  if (id) await db.delete(users).where(eq(users.id, id));
+  const user = await getUser();
+  if (user) await db.delete(users).where(eq(users.id, user.id));
   const store = await cookies();
   store.delete(COOKIE);
   done();
@@ -272,4 +350,99 @@ export async function deleteMetric(id: number) {
   const userId = await requireUser();
   await db.delete(metrics).where(and(eq(metrics.id, id), eq(metrics.userId, userId)));
   done();
+}
+
+// ---------- Backup: importação (JSON gerado pelo /api/export) ----------
+export type ImportPayload = {
+  profile?: Profile;
+  foodLogs?: { date: string; meal: string; name: string; grams: number; portionLabel?: string; kcal: number; protein: number; carbs: number; fat: number; fiber?: number }[];
+  waterLogs?: { date: string; ml: number }[];
+  workoutLogs?: { date: string; title: string; kind: string; durationMin: number; kcal: number; effort?: number; exercises?: WorkoutExercise[]; notes?: string }[];
+  metrics?: MetricInput[];
+};
+
+export async function importData(payload: ImportPayload): Promise<{ ok: boolean; error?: string; imported?: Record<string, number> }> {
+  const userId = await requireUser();
+  const key = await clientKey("import");
+  if (!rateLimit(key, 10, 60_000)) return { ok: false, error: "Muitas importações. Aguarde um pouco." };
+  if (!payload || typeof payload !== "object") return { ok: false, error: "Arquivo inválido." };
+
+  const imported: Record<string, number> = {};
+  const cap = <T>(a: T[] | undefined) => (Array.isArray(a) ? a.slice(0, 5000) : []);
+
+  if (payload.profile) {
+    await db.update(users).set(profileValues(payload.profile)).where(eq(users.id, userId));
+    imported.profile = 1;
+  }
+
+  const foods = cap(payload.foodLogs).filter((e) => isDate(String(e?.date)));
+  if (foods.length) {
+    await db.insert(foodLogs).values(
+      foods.map((e) => ({
+        userId,
+        date: e.date,
+        meal: String(e.meal || "almoco"),
+        name: String(e.name || "Alimento").slice(0, 80),
+        grams: num(e.grams, 0, 3000, 0),
+        portionLabel: String(e.portionLabel ?? "").slice(0, 80),
+        kcal: num(e.kcal, 0, 5000, 0),
+        protein: num(e.protein, 0, 500, 0),
+        carbs: num(e.carbs, 0, 1000, 0),
+        fat: num(e.fat, 0, 500, 0),
+        fiber: num(e.fiber, 0, 200, 0),
+      })),
+    );
+    imported.foodLogs = foods.length;
+  }
+
+  const waters = cap(payload.waterLogs).filter((w) => isDate(String(w?.date)));
+  if (waters.length) {
+    await db.insert(waterLogs).values(waters.map((w) => ({ userId, date: w.date, ml: Math.round(num(w.ml, 10, 3000, 250)) })));
+    imported.waterLogs = waters.length;
+  }
+
+  const workouts = cap(payload.workoutLogs).filter((w) => isDate(String(w?.date)));
+  if (workouts.length) {
+    await db.insert(workoutLogs).values(
+      workouts.map((w) => ({
+        userId,
+        date: w.date,
+        title: String(w.title || "Treino").slice(0, 80),
+        kind: oneOf(w.kind, WORKOUT_KINDS, "forca"),
+        durationMin: Math.round(num(w.durationMin, 1, 600, 45)),
+        kcal: Math.round(num(w.kcal, 0, 5000, 0)),
+        effort: Math.round(num(w.effort, 1, 10, 6)),
+        exercises: (w.exercises ?? []).slice(0, 20),
+        notes: String(w.notes ?? "").slice(0, 500),
+      })),
+    );
+    imported.workoutLogs = workouts.length;
+  }
+
+  const ms = cap(payload.metrics).filter((m) => isDate(String(m?.date)));
+  if (ms.length) {
+    for (const m of ms) {
+      const values = {
+        weightKg: opt(m.weightKg, 30, 300),
+        bodyFatPct: opt(m.bodyFatPct, 2, 70),
+        waistCm: opt(m.waistCm, 40, 250),
+        hipCm: opt(m.hipCm, 40, 250),
+        neckCm: opt(m.neckCm, 20, 70),
+        chestCm: opt(m.chestCm, 50, 200),
+        armCm: opt(m.armCm, 15, 80),
+        thighCm: opt(m.thighCm, 25, 120),
+        restingHr: opt(m.restingHr, 30, 140) === null ? null : Math.round(Number(m.restingHr)),
+        sleepHours: opt(m.sleepHours, 0, 16),
+        notes: String(m.notes ?? "").slice(0, 300),
+      };
+      await db
+        .insert(metrics)
+        .values({ userId, date: m.date, ...values })
+        .onConflictDoUpdate({ target: [metrics.userId, metrics.date], set: values });
+    }
+    imported.metrics = ms.length;
+  }
+
+  done();
+  return { ok: true, imported };
 }

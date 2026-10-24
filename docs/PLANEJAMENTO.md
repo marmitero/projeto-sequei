@@ -14,7 +14,7 @@ Documento de produto/engenharia baseado no que **existe hoje** (ver [FUNCIONALID
 
 ## 2. Achados desta sessão (corrigir primeiro — P0)
 
-> **2026-10-24: os itens 1–5 e 7–8 abaixo foram corrigidos e revalidados na Fase 0** (item 6 — migrações versionadas — seguiu para a Fase 1; testes/CI também). Detalhes em [TESTES.md §10](./TESTES.md).
+> **2026-10-24: todos os itens abaixo (1–8) foram corrigidos** — 1–5 e 7–8 na Fase 0; item 6 (migrações versionadas) e a pendência de testes/CI na Fase 1. Detalhes em [TESTES.md §10 e §11](./TESTES.md).
 
 | # | Achado | Impacto | Correção proposta |
 |---|---|---|---|
@@ -30,8 +30,8 @@ Documento de produto/engenharia baseado no que **existe hoje** (ver [FUNCIONALID
 ## 3. Lacunas de produto (por que o usuário larga o app)
 
 ### P1 — Confiança e continuidade
-1. **Sem login/conta** — cookie anônimo: trocar de celular/perder cookies = perder tudo; sem sync; sem recuperação. *É a lacuna mais grave para retenção.*
-2. **Sem export/backup de dados** (CSV/JSON) — o histórico é refém do app.
+1. ~~Sem login/conta~~ ✅ **resolvido na Fase 1**: conta com e-mail+senha, sessão de 30 dias, sync entre dispositivos e vínculo automático do perfil anônimo. (Restam para evoluir: recuperação de senha por e-mail e 2FA.)
+2. ~~Sem export/backup de dados~~ ✅ **resolvido na Fase 1**: export JSON completo + CSVs por área + restauração de backup.
 3. **Sem lembretes/notificações** — `wakeTime`/`sleepTime` já são coletados, mas não geram nenhum alerta de água/refeição/treino.
 4. **Sem estados de erro/carga** e sem feedback quando a ação falha (o wizard mostra 1 mensagem genérica).
 
@@ -52,7 +52,7 @@ Documento de produto/engenharia baseado no que **existe hoje** (ver [FUNCIONALID
 16. **Sem multiusuário/admin** (nutricionista acompanhando alunos, plano familiar).
 
 ### Lacunas técnicas complementares
-17. Testes automatizados **dentro do repo** (hoje os 56 testes desta sessão vivem fora) + CI (GitHub Actions: typecheck, lint, testes, build).
+17. ~~Testes automatizados dentro do repo + CI~~ ✅ **resolvido na Fase 1**: Vitest (`tests/unit` + `tests/e2e`) e GitHub Actions rodando a bateria completa. (Playwright em navegador pode ser adicionado depois.)
 18. Rate limiting / headers de segurança / logs de auditoria (mesmo com app pessoal, `resetAccount` é destrutivo).
 19. Observabilidade (métricas de erro, performance de queries) além do `/api/health`.
 20. Paginação/limite em listas longas (métricas, histórico de treinos) e índices revisados conforme dados crescem.
@@ -63,11 +63,12 @@ Documento de produto/engenharia baseado no que **existe hoje** (ver [FUNCIONALID
 Corrigir os 8 erros de lint; env-driven config + build sem banco; renomear package; `error.tsx`/`loading.tsx`; validação de enums. **Critério:** `lint`/`typecheck`/`build` verdes em CI.
 > **Status:** tudo implementado e revalidado (lint 0, typecheck 0, build sem env ✅, E2E 28/28 — ver [TESTES.md §10](./TESTES.md)). Pendente apenas de CI (movido para a Fase 1).
 
-### Fase 1 — Fundação para crescer (1–2 semanas)
+### Fase 1 — Fundação para crescer (1–2 semanas) ✅ **concluída em 2026-10-24**
 - **Conta real** (Auth.js/Lucia com e-mail+senha ou magic link) migrando o cookie anônimo → usuário; sync entre dispositivos.
 - **Migrações Drizzle versionadas** + script de seed; **Vitest** com os testes desta sessão + **Playwright** para os fluxos E2E; **GitHub Actions**.
 - Export/import JSON+CSV; rate limiting básico; `helmet`-like headers.
 - **Critério:** usuário novo cria conta, registra tudo e exporta seus dados; CI verde na main.
+> **Status:** implementado com auth própria (scrypt + sessões revogáveis + claim do perfil anônimo, sem dependências novas de auth), migrações em `drizzle/`, seed demo, Vitest (39 unit) + E2E via Server Actions (31) — **Playwright adiado** (testes E2E cobrem os fluxos sem navegador; pode ser adicionado em CI depois), CI completo em `.github/workflows/ci.yml`, export JSON/CSV + import JSON, rate limiting e headers. Ver [TESTES.md §11](./TESTES.md).
 
 ### Fase 2 — Profundidade (2–4 semanas)
 - Biblioteca "meus alimentos" + favoritos + repetir refeição de ontem; **código de barras** (Open Food Facts).
