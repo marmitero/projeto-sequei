@@ -4,7 +4,9 @@ import { NextResponse, type NextRequest } from "next/server";
 export function middleware(_req: NextRequest) {
   const res = NextResponse.next();
   res.headers.set("X-Content-Type-Options", "nosniff");
-  res.headers.set("X-Frame-Options", "DENY");
+  // Proteção contra clickjacking via CSP (supera X-Frame-Options); permite o
+  // preview em iframe do ambiente de demonstração (*.e2b.app).
+  res.headers.set("Content-Security-Policy", "frame-ancestors 'self' https://*.e2b.app");
   res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
   res.headers.set("X-DNS-Prefetch-Control", "off");

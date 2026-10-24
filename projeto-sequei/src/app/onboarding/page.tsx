@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { LogIn } from "lucide-react";
 import ProfileWizard from "@/components/ProfileWizard";
+import { getUser, toProfile } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+  // Se já existe perfil (ex.: retorno após falha de navegação), pré-preenche o
+  // formulário em vez de descartar os dados do usuário.
+  const user = await getUser();
   return (
     <main className="min-h-screen px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto mb-4 flex max-w-3xl items-center justify-end">
@@ -12,7 +16,7 @@ export default function OnboardingPage() {
           <LogIn size={16} /> Já tem conta? Entrar
         </Link>
       </div>
-      <ProfileWizard mode="create" />
+      <ProfileWizard mode="create" initial={user ? toProfile(user) : undefined} />
     </main>
   );
 }

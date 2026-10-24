@@ -176,3 +176,28 @@ Bateria final: **typecheck 0 erros · lint 0 problemas · 90/90 testes** (48 uni
 ### Limitações conhecidas do ambiente de teste
 - Open Food Facts é inacessível deste sandbox (rede restrita) → apenas o caminho de degradação é coberto; a integração real usa o mesmo mapper já testado por unidade.
 - Playwright segue indisponível (CDN bloqueada); a UI nova é coberta pelos e2e HTTP (HTML renderizado) + unitários da lógica pura.
+
+## 13. Validação completa pós-Fase 2 — bugs de login/cadastro e onboarding (2026-10-24)
+
+Solicitada pelo usuário após relatar: (a) login/cadastro não funcionava; (b) o wizard de onboarding zerava ao concluir ("Saúde e resumo") em vez de avançar. Bateria final desta rodada: **typecheck 0 · lint 0 · 93/93 testes** (48 unit + 45 e2e) · build OK · smoke de todas as rotas 200/404 conforme esperado.
+
+### Causas-raiz encontradas
+1. **CSRF de Server Actions atrás de reverse proxy (reproduzido)**: com `Origin: https://<host-preview>` e `Host: 127.0.0.1:3000` (proxy reescrevendo o Host), o Next abortava a action — `Invalid Server Actions request` / *"x-forwarded-host ... does not match origin ... Aborting the action"*. Login/cadastro e o salvamento do wizard falhavam de forma invisível (o `AuthForm` não tinha `try/catch` nem mensagem de erro). → **corrigido** com `experimental.serverActions.allowedOrigins: ["*.e2b.app"]` (`next.config.ts`).
+2. **Cookies de identidade incompatíveis com iframe/proxy**: `SameSite=Lax` não é gravado em contexto de iframe cross-site (preview) e proxies podem descartar `Set-Cookie` de respostas de Server Action. Sem o cookie, o `router.push("/")` após salvar/entrar voltava para `/onboarding` com o formulário **zerado** — exatamente o "reset" relatado. → **corrigido em camadas**:
+   - `authCookieOpts()`: em requisições https → `SameSite=None; Secure`; em http (dev local) → `SameSite=Lax` (`src/lib/session.ts`);
+   - fallback cliente `persistAuthCookies()` (`src/lib/clientCookies.ts`): as actions devolvem `id`/`fituid`/`session` e o cliente grava via `document.cookie` apenas se o cookie não existir (a escrita é ignorada pelo navegador quando o cookie HttpOnly já está gravado — inofensivo).
+3. **Silêncio em falhas de autenticação**: `AuthForm` sem `try/catch` nem `<form>` (Enter não enviava; erro de rede/action sumia). → **corrigido**: `<form onSubmit>`, `role="alert"` no erro, mensagem explícita em exceção.
+4. **Onboarding descartava dados ao reentrar**: `/onboarding` sempre montava o wizard vazio. → **corrigido**: pré-preenche com o perfil existente (`initial={toProfile(user)}`).
+5. **`X-Frame-Options: DENY` no middleware** bloqueava embedding do preview. → substituído por `Content-Security-Policy: frame-ancestors 'self' https://*.e2b.app` (mantém proteção contra clickjacking e libera o preview).
+
+### Correções de ambiente (sandbox, não do app)
+- `node_modules`, `.next` e o Postgres embutido são descartados entre turnos do agente: `npm install` + `npm run build` + `node keep-pg.mjs` (recriado em `/home/user/pgtools`) + `drizzle-kit migrate` antes de validar.
+
+### Cobertura nova
+- `tests/e2e/proxy.test.ts` (3): action aceita com `Origin` de preview e `Host` reescrito (sem a allowlist seria 500); `Set-Cookie` com `SameSite=None; Secure` em https; registro/login devolvem `session` para o fallback de cookie.
+
+### Validação manual (HTTP, protocolo real das Server Actions)
+- Fluxo do wizard com **os DEFAULTs exatos do formulário** (`trainingTime: "noite"`, `climate: "temperado"` — confirmados aceitos pelo servidor): salvar → `200 ok:true` + `fituid` → `GET /` = dashboard; `GET /onboarding` pré-preenche o nome.
+- Cadastro → logout → login: `fit_session` emitido/revogado corretamente; login em "outro dispositivo" (só sessão) sincroniza `fituid` e abre o dashboard. Conta sem perfil cai no onboarding (comportamento correto).
+- Matriz de `Origin`/`Host`/`X-Forwarded-Host` após a correção: os 3 cenários passam do CSRF.
+- Smoke: `/`, `/alimentacao`, `/compras`, `/exercicios`, `/hidratacao`, `/metricas`, `/receitas`, `/tabela`, `/perfil`, `/login`, `/cadastro`, `/onboarding`, `/api/health`, `/api/export` → 200; rota inexistente → 404; headers: CSP `frame-ancestors` presente, `nosniff` presente.

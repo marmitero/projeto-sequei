@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { and, eq, gt } from "drizzle-orm";
 import { db } from "@/db";
 import { accounts, sessions, users, type Account, type User } from "@/db/schema";
@@ -9,6 +9,20 @@ import type { Profile } from "./calc";
 export const COOKIE = "fituid";
 export const SESSION_COOKIE = "fit_session";
 export const SESSION_DAYS = 30;
+
+/**
+ * Atributos de cookie de identidade por protocolo:
+ * - HTTPS (produção/preview atrás de proxy): `SameSite=None; Secure` — funciona
+ *   em contexto de iframe cross-site (preview do Arena) e em navegação normal;
+ * - HTTP (dev local): `SameSite=lax` (cookies `Secure` não seriam gravados).
+ */
+export async function authCookieOpts(maxAge: number) {
+  const h = await headers();
+  const https = h.get("x-forwarded-proto") === "https" || h.get("origin")?.startsWith("https://");
+  return https
+    ? ({ httpOnly: true, sameSite: "none", secure: true, path: "/", maxAge } as const)
+    : ({ httpOnly: true, sameSite: "lax", path: "/", maxAge } as const);
+}
 
 function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -35,13 +49,15 @@ export async function getSessionAccount(): Promise<Account | null> {
   return rows[0]?.account ?? null;
 }
 
-/** Cria sessão persistida e define o cookie (30 dias). */
-export async function startSession(accountId: string) {
+/** Cria sessão persistida e define o cookie (30 dias). Devolve o token para o
+ * fallback de `document.cookie` no cliente (quando um proxy descarta Set-Cookie). */
+export async function startSession(accountId: string): Promise<string> {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
   await db.insert(sessions).values({ tokenHash: hashToken(token), accountId, expiresAt });
   const store = await cookies();
-  store.set(SESSION_COOKIE, token, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * SESSION_DAYS });
+  store.set(SESSION_COOKIE, token, await authCookieOpts(60 * 60 * 24 * SESSION_DAYS));
+  return token;
 }
 
 /** Encerra a sessão atual (revoga o token) e limpa os cookies de identidade. */

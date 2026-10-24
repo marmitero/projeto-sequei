@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Leaf, LogIn, UserPlus, Loader2 } from "lucide-react";
 import { loginAccount, registerAccount } from "@/app/actions";
+import { persistAuthCookies } from "@/lib/clientCookies";
 
 export default function AuthForm({ mode }: { mode: "login" | "cadastro" }) {
   const isLogin = mode === "login";
@@ -15,20 +16,27 @@ export default function AuthForm({ mode }: { mode: "login" | "cadastro" }) {
   const [pending, start] = useTransition();
   const router = useRouter();
 
-  const submit = () => {
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
     setError("");
     if (!isLogin && password !== confirm) {
       setError("As senhas não coincidem.");
       return;
     }
+    if (!email || !password) return;
     start(async () => {
-      const r = isLogin ? await loginAccount(email, password) : await registerAccount(email, password);
-      if (!r.ok) {
-        setError(r.error ?? "Não foi possível continuar.");
-        return;
+      try {
+        const r = isLogin ? await loginAccount(email, password) : await registerAccount(email, password);
+        if (!r.ok) {
+          setError(r.error ?? "Não foi possível continuar.");
+          return;
+        }
+        persistAuthCookies({ fituid: r.fituid, session: r.session });
+        router.push("/");
+        router.refresh();
+      } catch {
+        setError("Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.");
       }
-      router.push("/");
-      router.refresh();
     });
   };
 
@@ -46,7 +54,7 @@ export default function AuthForm({ mode }: { mode: "login" | "cadastro" }) {
         </div>
       </div>
 
-      <div className="card space-y-4 p-6">
+      <form className="card space-y-4 p-6" onSubmit={submit}>
         <div>
           <label className="label" htmlFor="email">E-mail</label>
           <input id="email" type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@email.com" autoComplete="email" />
@@ -61,8 +69,8 @@ export default function AuthForm({ mode }: { mode: "login" | "cadastro" }) {
             <input id="confirm" type="password" className="input" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Repita a senha" autoComplete="new-password" />
           </div>
         )}
-        {error && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>}
-        <button className="btn-primary w-full" onClick={submit} disabled={pending || !email || !password}>
+        {error && <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>}
+        <button type="submit" className="btn-primary w-full" disabled={pending || !email || !password}>
           {pending ? <Loader2 size={16} className="animate-spin" /> : isLogin ? <LogIn size={16} /> : <UserPlus size={16} />}
           {pending ? "Aguarde..." : isLogin ? "Entrar" : "Criar conta"}
         </button>
@@ -84,7 +92,7 @@ export default function AuthForm({ mode }: { mode: "login" | "cadastro" }) {
             Ao criar sua conta, os dados já registrados neste navegador serão vinculados a ela.
           </p>
         )}
-      </div>
+      </form>
 
       <p className="mt-4 text-center text-sm text-slate-500">
         <Link href="/onboarding" className="text-slate-500 underline underline-offset-2">Continuar sem conta</Link>

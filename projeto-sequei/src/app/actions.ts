@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { users, accounts, foodLogs, waterLogs, workoutLogs, metrics, customFoods, favorites, type WorkoutExercise } from "@/db/schema";
-import { COOKIE, getUserId, getUser, getSessionAccount, startSession, endSession } from "@/lib/session";
+import { COOKIE, getUserId, getUser, getSessionAccount, startSession, endSession, authCookieOpts } from "@/lib/session";
 import type { Profile } from "@/lib/calc";
 import { FOOD_MAP, macrosFor } from "@/lib/foods";
 import { RECIPES, recipeNutrition } from "@/lib/recipes";
@@ -83,7 +83,7 @@ function profileValues(data: Profile) {
   };
 }
 
-export async function saveProfile(data: Profile) {
+export async function saveProfile(data: Profile): Promise<{ ok: boolean; id: string }> {
   const account = await getSessionAccount();
   const values = { ...profileValues(data), ...(account ? { accountId: account.id } : {}) };
   const current = await getUser();
@@ -97,9 +97,9 @@ export async function saveProfile(data: Profile) {
     id = r[0].id;
   }
   const store = await cookies();
-  store.set(COOKIE, id, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365 * 2 });
+  store.set(COOKIE, id, await authCookieOpts(60 * 60 * 24 * 365 * 2));
   done();
-  return { ok: true };
+  return { ok: true, id };
 }
 
 async function clientKey(prefix: string) {
@@ -108,7 +108,7 @@ async function clientKey(prefix: string) {
   return `${prefix}:${ip}`;
 }
 
-export async function registerAccount(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
+export async function registerAccount(email: string, password: string): Promise<{ ok: boolean; error?: string; fituid?: string | null; session?: string }> {
   const mail = normalizeEmail(email);
   if (!isValidEmail(mail)) return { ok: false, error: "E-mail inválido." };
   const pwdError = validatePassword(password);
@@ -131,12 +131,12 @@ export async function registerAccount(email: string, password: string): Promise<
       .set({ accountId, updatedAt: new Date() })
       .where(and(eq(users.id, anonId), isNull(users.accountId)));
   }
-  await startSession(accountId);
+  const session = await startSession(accountId);
   done();
-  return { ok: true };
+  return { ok: true, fituid: anonId ?? (await getUserId()), session };
 }
 
-export async function loginAccount(email: string, password: string): Promise<{ ok: boolean; error?: string }> {
+export async function loginAccount(email: string, password: string): Promise<{ ok: boolean; error?: string; fituid?: string | null; session?: string }> {
   const mail = normalizeEmail(email);
   const ipKey = await clientKey("login");
   if (!rateLimit(`login:${mail}`, 10, 5 * 60_000) || !rateLimit(ipKey, 60, 5 * 60_000)) {
@@ -147,13 +147,13 @@ export async function loginAccount(email: string, password: string): Promise<{ o
   if (!account || !verifyPassword(String(password ?? ""), account.passwordHash)) {
     return { ok: false, error: "E-mail ou senha incorretos." };
   }
-  await startSession(account.id);
+  const session = await startSession(account.id);
 
   // Sincroniza o cookie de perfil com o perfil da conta (se já existir)
   const profile = await db.select({ id: users.id }).from(users).where(eq(users.accountId, account.id)).limit(1);
   const store = await cookies();
   if (profile[0]) {
-    store.set(COOKIE, profile[0].id, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365 * 2 });
+    store.set(COOKIE, profile[0].id, await authCookieOpts(60 * 60 * 24 * 365 * 2));
   } else {
     // conta nova sem perfil: reivindica o perfil anônimo deste navegador, se houver
     const anonId = await getUserId();
@@ -165,7 +165,7 @@ export async function loginAccount(email: string, password: string): Promise<{ o
     }
   }
   done();
-  return { ok: true };
+  return { ok: true, fituid: profile[0]?.id ?? (await getUserId()), session };
 }
 
 export async function logoutAccount() {

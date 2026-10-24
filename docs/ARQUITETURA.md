@@ -84,6 +84,8 @@ UUID PK (`defaultRandom`), `account_id` (FK → accounts, **set null**, **índic
 
 ## 4. Sessão e identidade
 
+> **Cookies por protocolo** (`authCookieOpts` em `src/lib/session.ts`): em requisições https (`x-forwarded-proto`/`origin`) os cookies de identidade saem com `SameSite=None; Secure` — funcionam em iframe cross-site (preview) — e em http local com `SameSite=Lax`. As actions de login/registro/onboarding devolvem `fituid`/`session` no corpo para o fallback `persistAuthCookies()` (`src/lib/clientCookies.ts`), que grava via `document.cookie` somente quando o cookie não chegou (ex.: proxy que descarta `Set-Cookie`).
+
 - **Modo anônimo**: cookie `fituid` = UUID do perfil (`httpOnly`, `sameSite=lax`, 2 anos).
 - **Modo conta**: cookie `fit_session` = token aleatório (30 dias); apenas o SHA-256 é persistido em `sessions`. Logout revoga o token.
 - **Resolução de usuário** (`getUser()`): 1) sessão → `accounts` → `users.account_id`; 2) fallback cookie `fituid`; 3) `null`. Assim o login em outro dispositivo recupera o mesmo perfil sem cookie local.
@@ -144,7 +146,8 @@ UUID PK (`defaultRandom`), `account_id` (FK → accounts, **set null**, **índic
 - Entradas sanitizadas: `num()` com clamp por campo, `isDate()`/`isTime()` por regex, strings truncadas, **whitelists de enums/arrays** (`profileValues`), lote ≤ 30 itens, `exercises` ≤ 20, métricas por faixa.
 - Deletes sempre escopados por `user_id` (não há IDOR entre usuários).
 - Cookies `httpOnly`/`sameSite`; senhas scrypt; sessões revogáveis; rate limiting em auth/import.
-- `src/middleware.ts` define headers "helmet-like" em todas as respostas: `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `X-DNS-Prefetch-Control` e `Strict-Transport-Security` em produção.
+- `src/middleware.ts` define headers "helmet-like" em todas as respostas: `X-Content-Type-Options: nosniff`, `Content-Security-Policy: frame-ancestors 'self' https://*.e2b.app` (proteção contra clickjacking; permite o preview em iframe), `Referrer-Policy`, `Permissions-Policy`, `X-DNS-Prefetch-Control` e `Strict-Transport-Security` em produção.
+- **Server Actions atrás de proxy**: `next.config.ts` permite `experimental.serverActions.allowedOrigins: ["*.e2b.app"]` — sem isso, requests com `Origin` do preview e `Host` reescrito pelo proxy são abortados ("Invalid Server Actions request").
 - Export exige usuário autenticado (401 sem sessão/perfil). Sem logs de auditoria (ver [PLANEJAMENTO.md](./PLANEJAMENTO.md)).
 
 ## 9. Infra e configuração

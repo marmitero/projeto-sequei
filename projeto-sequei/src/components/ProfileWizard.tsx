@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Leaf, ShieldAlert, Sparkles } from "lucide-react";
 import { saveProfile } from "@/app/actions";
+import { persistAuthCookies } from "@/lib/clientCookies";
 import { ACTIVITY_FACTORS, GOALS, ageFrom, bmi, bmiClass, computeTargets, weeksToGoal, type Profile } from "@/lib/calc";
 import { CARDIO, EQUIPMENT_LABELS, INJURY_LABELS } from "@/lib/exercises";
 
@@ -123,7 +124,8 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
     start(async () => {
       try {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Sao_Paulo";
-        await saveProfile({ ...p, timezone: tz });
+        const r = await saveProfile({ ...p, timezone: tz });
+        persistAuthCookies({ fituid: r.id });
         router.push("/");
         router.refresh();
       } catch {
