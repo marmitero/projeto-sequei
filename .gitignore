@@ -24,3 +24,6 @@ Thumbs.db
 coverage/
 .eslintcache
 .turbo/
+
+# PostgreSQL embutido (fallback do executar.bat)
+.tools/

@@ -31,6 +31,15 @@ App web (Next.js + PostgreSQL) de acompanhamento fitness em **português (pt-BR)
 
 ## Como rodar
 
+### Windows (teste rápido)
+1. Instale o **Node.js 20+** ([nodejs.org](https://nodejs.org/)) — e, se ainda não tiver, o **Docker Desktop** ou o **PostgreSQL** (o script usa, nesta ordem: um PostgreSQL já configurado → Docker → PostgreSQL embutido baixado sozinho).
+2. Clone/baixe o projeto e dê **duplo clique em `executar.bat`** (na raiz da pasta clonada).
+3. O script instala as dependências, prepara o banco (cria o `.env` se faltar), aplica as migrações, gera o build e abre o app em **http://localhost:3000** — conta demo `demo@fitvida.app` / `demo1234`.
+
+Se o seu PostgreSQL usar outras credenciais, ajuste `projeto-sequei\.env` (`DATABASE_URL`) e execute o `executar.bat` de novo.
+
+### Manual (qualquer SO)
+
 ```bash
 cd projeto-sequei
 npm install
