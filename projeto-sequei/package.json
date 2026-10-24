@@ -1,5 +1,7 @@
 {
-  "name": "nextjs-postgresql-template",
+  "name": "fitvida",
+  "version": "0.1.0",
+  "description": "FitVida — acompanhamento fitness personalizado: alimentação, treinos, hidratação, métricas e receitas low-carb.",
   "private": true,
   "scripts": {
     "dev": "next dev",

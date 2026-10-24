@@ -44,7 +44,7 @@ npx drizzle-kit push
 npm run dev                 # http://localhost:3000
 ```
 
-**Atenção:** `npm run build` também exige `DATABASE_URL` definido (o módulo de banco valida a env na importação). Veja [docs/TESTES.md](./docs/TESTES.md).
+**Atenção:** o build não exige mais banco — a conexão é criada sob demanda na primeira query em runtime. Veja [docs/TESTES.md](./docs/TESTES.md).
 
 ### Scripts disponíveis
 
@@ -76,8 +76,8 @@ projeto-sequei/
 │   │   └── api/health/route.ts # Health check (ping no banco)
 │   ├── components/             # AppShell, ProfileWizard, UI (Ring, gráficos…)
 │   ├── lib/                    # calc, foods, mealplan, exercises, recipes, data, session
-│   └── db/                     # schema.ts (Drizzle) e index.ts (pool)
-├── drizzle.config.json
+│   └── db/                     # schema.ts (Drizzle) e index.ts (pool lazy)
+├── drizzle.config.ts           # lê DATABASE_URL do ambiente/.env
 └── package.json
 ```
 

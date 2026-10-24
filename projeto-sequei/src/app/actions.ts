@@ -9,6 +9,7 @@ import { COOKIE, getUserId } from "@/lib/session";
 import type { Profile } from "@/lib/calc";
 import { FOOD_MAP, macrosFor } from "@/lib/foods";
 import { RECIPES, recipeNutrition } from "@/lib/recipes";
+import { CARDIO, EQUIPMENT_LABELS, INJURY_LABELS } from "@/lib/exercises";
 
 async function requireUser() {
   const id = await getUserId();
@@ -26,6 +27,25 @@ const num = (v: unknown, min: number, max: number, def: number) => {
   return Math.min(Math.max(n, min), max);
 };
 const isDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
+const isTime = (s: string) => /^([01]\d|2[0-3]):[0-5]\d$/.test(s);
+
+// Whitelists de campos enumerados — valores fora da lista caem no padrão.
+const oneOf = <T extends string>(v: unknown, allowed: readonly T[], def: T): T => (allowed.includes(v as T) ? (v as T) : def);
+const keysOf = (v: unknown, allowed: readonly string[]) =>
+  Array.isArray(v) ? [...new Set(v.filter((x): x is string => typeof x === "string" && allowed.includes(x)))].slice(0, 20) : [];
+
+const GOALS = ["perder", "manter", "ganhar", "recomp"] as const;
+const PACES = ["leve", "moderado", "agressivo"] as const;
+const ACTIVITY_LEVELS = ["sedentario", "leve", "moderado", "intenso", "atleta"] as const;
+const EXPERIENCES = ["iniciante", "intermediario", "avancado"] as const;
+const LOCATIONS = ["academia", "casa", "ar_livre"] as const;
+const DIETS = ["onivoro", "vegetariano", "vegano", "pescetariano"] as const;
+const CARB_APPROACHES = ["equilibrado", "lowcarb", "cetogenica"] as const;
+const TRAINING_TIMES = ["manha", "tarde", "noite"] as const;
+const CLIMATES = ["temperado", "quente", "frio"] as const;
+const RESTRICTIONS = ["lactose", "gluten", "oleaginosas", "amendoim", "ovo", "frutos_do_mar", "soja"] as const;
+const CONDITIONS = ["diabetes", "hipertensao", "colesterol", "hipotireoidismo", "renal", "gestante", "lactante"] as const;
+const WORKOUT_KINDS = ["forca", "cardio", "mobilidade", "esporte"] as const;
 
 export async function saveProfile(data: Profile) {
   const values = {
@@ -35,26 +55,26 @@ export async function saveProfile(data: Profile) {
     heightCm: num(data.heightCm, 120, 230, 170),
     weightKg: num(data.weightKg, 30, 300, 70),
     targetWeightKg: num(data.targetWeightKg, 30, 300, 70),
-    goal: data.goal,
-    pace: data.pace,
-    activityLevel: data.activityLevel,
-    experience: data.experience,
+    goal: oneOf(data.goal, GOALS, "perder"),
+    pace: oneOf(data.pace, PACES, "moderado"),
+    activityLevel: oneOf(data.activityLevel, ACTIVITY_LEVELS, "leve"),
+    experience: oneOf(data.experience, EXPERIENCES, "iniciante"),
     trainingDays: Math.round(num(data.trainingDays, 1, 7, 3)),
     sessionMinutes: Math.round(num(data.sessionMinutes, 15, 180, 60)),
-    location: data.location,
-    equipment: data.equipment ?? [],
-    cardioPrefs: data.cardioPrefs ?? [],
-    injuries: data.injuries ?? [],
-    diet: data.diet,
-    carbApproach: data.carbApproach,
-    restrictions: data.restrictions ?? [],
+    location: oneOf(data.location, LOCATIONS, "academia"),
+    equipment: keysOf(data.equipment, Object.keys(EQUIPMENT_LABELS)),
+    cardioPrefs: keysOf(data.cardioPrefs, Object.keys(CARDIO)),
+    injuries: keysOf(data.injuries, Object.keys(INJURY_LABELS)),
+    diet: oneOf(data.diet, DIETS, "onivoro"),
+    carbApproach: oneOf(data.carbApproach, CARB_APPROACHES, "equilibrado"),
+    restrictions: keysOf(data.restrictions, RESTRICTIONS),
     dislikes: String(data.dislikes ?? "").slice(0, 300),
-    healthConditions: data.healthConditions ?? [],
+    healthConditions: keysOf(data.healthConditions, CONDITIONS),
     mealsPerDay: Math.round(num(data.mealsPerDay, 3, 6, 5)),
-    wakeTime: data.wakeTime || "07:00",
-    sleepTime: data.sleepTime || "23:00",
-    trainingTime: data.trainingTime,
-    climate: data.climate,
+    wakeTime: isTime(data.wakeTime) ? data.wakeTime : "07:00",
+    sleepTime: isTime(data.sleepTime) ? data.sleepTime : "23:00",
+    trainingTime: oneOf(data.trainingTime, TRAINING_TIMES, "noite"),
+    climate: oneOf(data.climate, CLIMATES, "temperado"),
     timezone: data.timezone || "America/Sao_Paulo",
     updatedAt: new Date(),
   };
@@ -180,7 +200,7 @@ export async function logWorkout(input: {
     userId,
     date: input.date,
     title: input.title.slice(0, 80) || "Treino",
-    kind: input.kind,
+    kind: oneOf(input.kind, WORKOUT_KINDS, "forca"),
     durationMin: Math.round(num(input.durationMin, 1, 600, 45)),
     kcal: Math.round(num(input.kcal, 0, 5000, 0)),
     effort: Math.round(num(input.effort, 1, 10, 6)),

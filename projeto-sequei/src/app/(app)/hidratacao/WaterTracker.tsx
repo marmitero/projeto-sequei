@@ -63,17 +63,18 @@ export default function WaterTracker({
     const span = Math.max(end - wake, 6 * 60);
     const n = Math.min(Math.max(Math.round(span / 90), 6), 12);
     const per = Math.round(goal / n / 10) * 10;
-    let acc = 0;
-    return Array.from({ length: n }, (_, i) => {
+    const items: { time: string; minute: number; ml: number; cumulative: number; note: string }[] = [];
+    for (let i = 0; i < n; i++) {
       const t = wake + Math.round((span / (n - 1)) * i);
       const ml = i === n - 1 ? goal - per * (n - 1) : per;
-      acc += ml;
+      const cumulative = items.reduce((a, x) => a + x.ml, ml);
       let note = "";
       if (i === 0) note = "Ao acordar — reidrata após a noite";
       const trainMin = profile.trainingTime === "manha" ? wake + 90 : profile.trainingTime === "tarde" ? 15 * 60 : 19 * 60;
       if (extra > 0 && Math.abs(t - trainMin) < span / n / 1.5) note = "Perto do treino — beba em goles durante a sessão";
-      return { time: toHHMM(t), minute: t, ml, cumulative: acc, note };
-    });
+      items.push({ time: toHHMM(t), minute: t, ml, cumulative, note });
+    }
+    return items;
   }, [profile, goal, extra]);
 
   const age = ageFrom(profile.birthDate);

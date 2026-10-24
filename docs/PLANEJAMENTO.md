@@ -14,6 +14,8 @@ Documento de produto/engenharia baseado no que **existe hoje** (ver [FUNCIONALID
 
 ## 2. Achados desta sessão (corrigir primeiro — P0)
 
+> **2026-10-24: os itens 1–5 e 7–8 abaixo foram corrigidos e revalidados na Fase 0** (item 6 — migrações versionadas — seguiu para a Fase 1; testes/CI também). Detalhes em [TESTES.md §10](./TESTES.md).
+
 | # | Achado | Impacto | Correção proposta |
 |---|---|---|---|
 | 1 | `npm run lint` com **8 erros** (componente `H` criado em render em `FoodTable.tsx`; `acc +=` em `useMemo` em `WaterTracker.tsx`) | CI quebrado; risco com React Compiler | Extrair componente; trocar acumulador por `reduce`/variável local do `map` |
@@ -57,8 +59,9 @@ Documento de produto/engenharia baseado no que **existe hoje** (ver [FUNCIONALID
 
 ## 4. Roadmap proposto
 
-### Fase 0 — Higiene (1–2 dias) ✅ parcialmente feita
+### Fase 0 — Higiene (1–2 dias) ✅ **concluída em 2026-10-24**
 Corrigir os 8 erros de lint; env-driven config + build sem banco; renomear package; `error.tsx`/`loading.tsx`; validação de enums. **Critério:** `lint`/`typecheck`/`build` verdes em CI.
+> **Status:** tudo implementado e revalidado (lint 0, typecheck 0, build sem env ✅, E2E 28/28 — ver [TESTES.md §10](./TESTES.md)). Pendente apenas de CI (movido para a Fase 1).
 
 ### Fase 1 — Fundação para crescer (1–2 semanas)
 - **Conta real** (Auth.js/Lucia com e-mail+senha ou magic link) migrando o cookie anônimo → usuário; sync entre dispositivos.

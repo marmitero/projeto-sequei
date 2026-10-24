@@ -8,19 +8,19 @@ Escopo: validação estática (typecheck, lint, build), provisionamento do banco
 
 ## 1. Resumo executivo
 
-| Etapa | Resultado |
-|---|---|
-| `npm install` | ✅ OK |
-| `npx drizzle-kit push` (schema) | ✅ 5 tabelas criadas |
-| `npm run typecheck` | ✅ **0 erros** |
-| `npm run lint` | ❌ **8 erros** (regras de componentes em render / React Compiler) — §3 |
-| `npm run build` (sem `DATABASE_URL`) | ❌ falha na coleta de páginas — §4 |
-| `npm run build` (com `DATABASE_URL`) | ✅ 10 rotas compiladas — §4 |
-| Testes de unidade (regras de negócio) | ✅ **32/32** — §5 |
-| Testes E2E (rotas + Server Actions) | ✅ **24/24** — §6 |
-| Smoke do servidor de produção (`next start`) | ✅ `/api/health`, redirects e páginas respondendo — §6 |
+| Etapa | Resultado na sessão | Situação após a Fase 0 (mesma data) |
+|---|---|---|
+| `npm install` | ✅ OK | ✅ OK |
+| `npx drizzle-kit push` (schema) | ✅ 5 tabelas criadas | ✅ OK (via `drizzle.config.ts` com env) |
+| `npm run typecheck` | ✅ **0 erros** | ✅ **0 erros** |
+| `npm run lint` | ❌ **8 erros** (§3) | ✅ **0 erros** (corrigidos) |
+| `npm run build` (sem `DATABASE_URL`) | ❌ falha na coleta de páginas (§4) | ✅ **passa** (pool lazy) |
+| `npm run build` (com `DATABASE_URL`) | ✅ 10 rotas compiladas | ✅ 10 rotas compiladas |
+| Testes de unidade (regras de negócio) | ✅ **32/32** — §5 | ✅ **32/32** (re-executados) |
+| Testes E2E (rotas + Server Actions) | ✅ **24/24** — §6 | ✅ **28/28** (com novos casos P0 — §10) |
+| Smoke do servidor de produção (`next start`) | ✅ — §6 | ✅ (re-executado com novo build) |
 
-**Veredito: o app está funcional.** Todos os fluxos principais (criar perfil, registrar comida/receita/item manual, água, treino, métricas com upsert e atualização automática de peso, navegação entre telas, reset de conta) funcionaram de ponta a ponta. Os problemas encontrados são de **qualidade/robustez de engenharia** (lint, exigência de env no build, configuração hardcoded), não de funcionalidade quebrada — detalhados em [PLANEJAMENTO.md](./PLANEJAMENTO.md).
+**Veredito: o app está funcional.** Todos os fluxos principais (criar perfil, registrar comida/receita/item manual, água, treino, métricas com upsert e atualização automática de peso, navegação entre telas, reset de conta) funcionaram de ponta a ponta. Os problemas encontrados eram de **qualidade/robustez de engenharia** — todos os itens P0 foram corrigidos e revalidados (§10); o restante está no roadmap de [PLANEJAMENTO.md](./PLANEJAMENTO.md).
 
 ## 2. Ambiente de teste
 
@@ -31,18 +31,16 @@ Escopo: validação estática (typecheck, lint, build), provisionamento do banco
 ## 3. Typecheck e Lint
 
 - **`tsc --noEmit`: limpo** (strict mode).
-- **ESLint: 8 erros, 0 warnings** (mesmo código roda sem problema no runtime hoje — são regras novas de `react-hooks`/React Compiler do `eslint-config-next` 16):
+- **ESLint na sessão inicial: 8 erros, 0 warnings** (regras novas de `react-hooks`/React Compiler do `eslint-config-next` 16) — **todos corrigidos na Fase 0** (§10):
 
-| Arquivo | Regra | Onde |
-|---|---|---|
-| `src/app/(app)/tabela/FoodTable.tsx` | `react-hooks/static-components` — componente `H` criado dentro do render (7×, usos nas linhas 153–159 + definição na linha 49) | Cabeçalho ordenável da tabela |
-| `src/app/(app)/hidratacao/WaterTracker.tsx:70` | "Cannot reassign variable after render completes" — `acc += ml` reatribuído dentro do `Array.from` do `useMemo` do cronograma | Cálculo do acumulado dos copos |
-
-Risco: se o React Compiler for habilitado no futuro, esses padrões podem quebrar memoização/estado. Correção é simples (extrair `H` para fora do componente; usar `map` com acumulador funcional ou `reduce`).
+| Arquivo | Regra | Onde | Correção aplicada |
+|---|---|---|---|
+| `src/app/(app)/tabela/FoodTable.tsx` | `react-hooks/static-components` — componente `H` criado dentro do render (7×) | Cabeçalho ordenável da tabela | Componente extraído para `SortHead` (módulo) com props |
+| `src/app/(app)/hidratacao/WaterTracker.tsx:70` | "Cannot reassign variable after render completes" — `acc += ml` em closure do `useMemo` | Cronograma de copos | `Array.from` com acumulador mutável → `for` + `reduce` puro |
 
 ## 4. Build de produção
 
-- **Sem `DATABASE_URL`**: `next build` **falha** em "Collecting page data" com `Error: DATABASE_URL is required` (o módulo `src/db/index.ts` valida a env no import, antes mesmo de qualquer query — afeta a rota `/api/health`).
+- **Sem `DATABASE_URL` (sessão inicial)**: `next build` **falhava** em "Collecting page data" com `Error: DATABASE_URL is required` (o módulo `src/db/index.ts` validava a env no import, antes mesmo de qualquer query — afetava a rota `/api/health`). **Corrigido na Fase 0**: o `db` é materializado sob demanda (Proxy que cria o pool na 1ª query), então o build não exige mais banco — apenas o runtime.
 - **Com `DATABASE_URL`**: build **OK em ~15 s**. Rotas: `/_not-found` estática; `/`, `/alimentacao`, `/exercicios`, `/hidratacao`, `/metricas`, `/onboarding`, `/perfil`, `/receitas`, `/tabela`, `/api/health` dinâmicas (comportamento esperado: sessão por cookie).
 
 ## 5. Testes de unidade — 32/32 ✅
@@ -115,3 +113,25 @@ Método: servidor de produção real + invocação das **Server Actions pelo mes
 - Carga/performance com milhares de registros; acessibilidade (foco em modais, leitores de tela).
 - Comportamento com `NODE_ENV=development` (hot reload) — sessão feita em produção.
 - Migrações versionadas (o repo usa apenas `drizzle-kit push`).
+
+## 10. Revalidação após a Fase 0 (2026-10-24)
+
+Após as correções da [Fase 0](./PLANEJAMENTO.md), toda a bateria foi re-executada no mesmo ambiente:
+
+| Etapa | Resultado |
+|---|---|
+| `npm run typecheck` | ✅ 0 erros |
+| `npm run lint` | ✅ **0 erros** (8 → 0) |
+| `npm run build` **sem** `DATABASE_URL` | ✅ **passa** (pool lazy no `src/db/index.ts`) |
+| `npx drizzle-kit push` via `drizzle.config.ts` (env) | ✅ "Changes applied"; sem env → mensagem de erro clara |
+| Testes de unidade | ✅ 32/32 |
+| Testes E2E | ✅ **28/28** (24 originais + 4 novos) |
+
+**Novos casos E2E cobrindo a Fase 0:**
+- 404 customizado (`/rota-que-nao-existe` → 404 com "Página não encontrada").
+- `saveProfile` com enums inválidos (`goal: "invalido"`, `pace: "???"`, `diet: "xyz"`, `equipment: ["bazooka","halteres"]`, `wakeTime: "99:99"`) → não quebra e **cai nos padrões** do whitelist (meta "Emagrecer", equipamento inválido descartado).
+- Redirect pós-reset preservado como **307 → /onboarding** (ver nota abaixo).
+
+**Nota de comportamento:** um `loading.tsx` na raiz do app fazia o redirect sem cookie virar navegação client-side (HTTP 200 + stream). Decisão: manter o skeleton apenas em `(app)/loading.tsx` (onde as queries acontecem) e **não** ter `loading.tsx` na raiz — assim o redirect do layout continua sendo 307 (funciona sem JS e é mais limpo). O `error.tsx` e o `not-found.tsx` ficam na raiz.
+
+**Itens P0 entregues:** lint zerado · build sem banco · `drizzle.config.ts` com `DATABASE_URL` do ambiente (credenciais hardcoded removidas) · `package.json` renomeado para `fitvida@0.1.0` · `error.tsx`/`(app)/loading.tsx`/`not-found.tsx` · whitelist de enums e arrays em `saveProfile`/`logWorkout` · `.gitignore`/`.env.example`/README/docs.

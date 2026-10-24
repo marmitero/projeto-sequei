@@ -1,12 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Search, ArrowUpDown, X, Scale3d, GitCompare } from "lucide-react";
 import { FOODS, FOOD_CATEGORIES, Food, foodAllowed, macrosFor, searchFoods } from "@/lib/foods";
 import type { Profile } from "@/lib/calc";
 import { MacroPills, fmt } from "@/components/ui";
 
 type SortKey = "name" | "kcal" | "p" | "c" | "f" | "fib" | "dens";
+
+function SortHead({ k, sort, onSort, children }: { k: SortKey; sort: SortKey; onSort: (k: SortKey) => void; children: ReactNode }) {
+  return (
+    <th className="px-2 py-3 text-right first:text-left">
+      <button onClick={() => onSort(k)} className={`inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide ${sort === k ? "text-emerald-700" : "text-slate-500"}`}>
+        {children} <ArrowUpDown size={12} />
+      </button>
+    </th>
+  );
+}
 
 function badges(f: Food) {
   const b: { l: string; c: string }[] = [];
@@ -45,14 +55,6 @@ export default function FoodTable({ profile }: { profile: Profile }) {
     }
   };
   const toggleCompare = (k: string) => setCompare((c) => (c.includes(k) ? c.filter((x) => x !== k) : c.length >= 3 ? [...c.slice(1), k] : [...c, k]));
-
-  const H = ({ k, children }: { k: SortKey; children: React.ReactNode }) => (
-    <th className="px-2 py-3 text-right first:text-left">
-      <button onClick={() => toggleSort(k)} className={`inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide ${sort === k ? "text-emerald-700" : "text-slate-500"}`}>
-        {children} <ArrowUpDown size={12} />
-      </button>
-    </th>
-  );
 
   const cmpFoods = compare.map((k) => FOODS.find((f) => f.key === k)!).filter(Boolean);
 
@@ -150,13 +152,13 @@ export default function FoodTable({ profile }: { profile: Profile }) {
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-white/95 backdrop-blur">
               <tr className="border-b border-slate-100">
-                <H k="name">Alimento</H>
-                <H k="kcal">Kcal</H>
-                <H k="p">Prot.</H>
-                <H k="c">Carbo</H>
-                <H k="f">Gord.</H>
-                <H k="fib">Fibra</H>
-                <H k="dens">P/100kcal</H>
+                <SortHead k="name" sort={sort} onSort={toggleSort}>Alimento</SortHead>
+                <SortHead k="kcal" sort={sort} onSort={toggleSort}>Kcal</SortHead>
+                <SortHead k="p" sort={sort} onSort={toggleSort}>Prot.</SortHead>
+                <SortHead k="c" sort={sort} onSort={toggleSort}>Carbo</SortHead>
+                <SortHead k="f" sort={sort} onSort={toggleSort}>Gord.</SortHead>
+                <SortHead k="fib" sort={sort} onSort={toggleSort}>Fibra</SortHead>
+                <SortHead k="dens" sort={sort} onSort={toggleSort}>P/100kcal</SortHead>
                 <th className="px-2 py-3 text-xs font-semibold uppercase text-slate-500">Comparar</th>
               </tr>
             </thead>
