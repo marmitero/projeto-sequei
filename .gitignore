@@ -1,0 +1,29 @@
+# Dependências e build
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# TypeScript / ESLint
+*.tsbuildinfo
+next-env.d.ts
+
+# Env e credenciais
+.env
+.env.*
+!.env.example
+
+# Logs e SO
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Cobertura / caches
+coverage/
+.eslintcache
+.turbo/
+
+# Drizzle / dados locais
+drizzle/meta/
