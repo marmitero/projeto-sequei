@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { Home, Utensils, Dumbbell, Droplets, LineChart, ChefHat, Table2, UserRound, Menu, X, Leaf } from "lucide-react";
+import { Home, Utensils, Dumbbell, Droplets, LineChart, ChefHat, Table2, UserRound, Menu, X, Leaf, ShoppingCart } from "lucide-react";
 
 const NAV = [
   { href: "/", label: "Início", icon: Home },
   { href: "/alimentacao", label: "Alimentação", icon: Utensils },
+  { href: "/compras", label: "Lista de Compras", icon: ShoppingCart },
   { href: "/exercicios", label: "Treinos", icon: Dumbbell },
   { href: "/hidratacao", label: "Hidratação", icon: Droplets },
   { href: "/metricas", label: "Métricas", icon: LineChart },

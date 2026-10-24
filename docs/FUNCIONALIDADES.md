@@ -111,3 +111,38 @@ Regras do servidor (`addFoodEntries`): lote de até 30 itens, datas validadas, g
 - **Datas**: "hoje" segue o fuso do usuário (`todayIn`); formatos `YYYY-MM-DD`.
 - **Responsivo**: sidebar (desktop), trilho de ícones (tablet), cabeçalho + barra inferior com "Mais" (mobile).
 - **Validação no servidor**: números por faixa (clamp), datas por regex, strings com limite de tamanho, lote máximo de itens, upsert por `(usuário, data)` em métricas.
+
+## 10. Fase 2 — Profundidade (biblioteca, atalhos e relatórios)
+
+### 10.1 Meus alimentos e favoritos
+- **Meus alimentos** (`custom_foods`): cadastro manual pelo modal de adicionar (aba “Manual”, com opção “salvar também em Meus alimentos”), por código de barras (botão “Salvar”) e edição por recriação (excluir + cadastrar). Campos: nome, porção (g + rótulo), kcal, proteína, carboidrato, gordura e fibra.
+- **Favoritos** (`favorites`): estrela em alimentos da base, receitas e alimentos pessoais. Aba “Favoritos” no modal reúne tudo com adição em 1 toque.
+- **Registrar pelo id**: entradas podem referenciar `customId`; o snapshot no diário mantém nome/gramas/macros da porção usada.
+
+### 10.2 Repetir refeição
+- Botão “Repetir esta refeição de ontem” (ícone de copiar) no cabeçalho de cada refeição do diário: copia todos os itens da mesma refeição da data anterior para a data atual (`copyMeal`), mantendo gramas e porções.
+
+### 10.3 Código de barras (Open Food Facts)
+- Aba “Código” no modal: digitação do código (6–14 dígitos) → consulta server-side à API pública do Open Food Facts (`lookupBarcode`) com timeout de 6 s e limite de 30 consultas/min.
+- Produto encontrado → cartão com macros/100 g, “Adicionar 100 g” ou “Salvar” na biblioteca. Não encontrado/sem internet → mensagem amigável (sem erro 500).
+- Observação: a consulta real depende de acesso à internet do servidor; em ambiente offline a funcionalidade degrada com aviso.
+
+### 10.4 Lista de compras
+- Página **Compras** (`/compras`, no menu): lista gerada automaticamente do cardápio sugerido dos próximos 7 dias, agregada por alimento (gramatura total arredondada) e agrupada por categoria TACO, com medida de porção aproximada e kcal.
+- Checklist com marcação persistida no navegador (`localStorage`), contador de progresso e “limpar marcações”.
+
+### 10.5 Progressão de força
+- Seção **Progressão de força** na página de Treinos: escolha do exercício (a partir dos treinos registrados), gráfico de carga por sessão (SVG), últimas sessões (carga, séries×reps, esforço) e sugestão heurística:
+  - < 2 sessões → sem sugestão;
+  - 2 sessões na mesma carga com esforço médio ≤ 8 → +5% (arredondado em 0,5 kg);
+  - esforço ≥ 9 → manter carga;
+  - carga em queda → deload (−10%).
+- **“Fiz isso”** em 1 toque: registra a sessão de hoje com a carga sugerida (`logWorkout`).
+- A carga é lida do campo `load` dos exercícios do treino (ex.: “40 kg”, “20,5kg”).
+
+### 10.6 Relatório semanal e tendências
+- Topo da página **Métricas**: “Relatório semanal” com a semana corrente (dias com registro, kcal/dia, proteína/dia, dias de hidratação ≥ 90% da meta, treinos, variação de peso) e comparação com a semana anterior (%).
+- Tendências das últimas 4 semanas (barras) para calorias e treinos.
+
+### Critério de sucesso (Fase 2)
+- 7 dias consecutivos de uso sem registro manual; ≥30% dos registros via favoritos/repetição. As métricas de uso por fonte ainda não são instrumentadas (a base de dados já permite derivar: entradas com `foodKey`/`recipeKey` repetidas vs. manuais).

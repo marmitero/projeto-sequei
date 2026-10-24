@@ -76,6 +76,12 @@ UUID PK (`defaultRandom`), `account_id` (FK → accounts, **set null**, **índic
 ### `metrics` — medidas corporais
 `id`, `user_id` (FK cascade), `date`, `weight_kg?`, `body_fat_pct?`, `waist_cm?`, `hip_cm?`, `neck_cm?`, `chest_cm?`, `arm_cm?`, `thigh_cm?`, `resting_hr?`, `sleep_hours?`, `notes`, `created_at`. **Índice único `(user_id, date)`** → upsert diário.
 
+### `custom_foods` — "meus alimentos" (Fase 2)
+`id`, `user_id` (FK cascade), `name`, `grams` (porção-base), `portion_label`, `kcal`, `protein`, `carbs`, `fat`, `fiber`, `created_at`. Índice `(user_id)`. Macros valem para a porção-base; o registro no diário aplica `servings`.
+
+### `favorites` — favoritos (Fase 2)
+`id`, `user_id` (FK cascade), `kind` (food|recipe|custom), `key` (foodKey, recipeKey ou id do custom), `created_at`. **Índice único `(user_id, kind, key)`** → toggle idempotente. Excluir um `custom_food` remove o favorito correspondente.
+
 ## 4. Sessão e identidade
 
 - **Modo anônimo**: cookie `fituid` = UUID do perfil (`httpOnly`, `sameSite=lax`, 2 anos).

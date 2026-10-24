@@ -170,3 +170,42 @@ export type FoodLog = typeof foodLogs.$inferSelect;
 export type WaterLog = typeof waterLogs.$inferSelect;
 export type WorkoutLog = typeof workoutLogs.$inferSelect;
 export type Metric = typeof metrics.$inferSelect;
+
+/** Alimentos personalizados do usuário ("meus alimentos") — macros para `grams` (1 porção). */
+export const customFoods = pgTable(
+  "custom_foods",
+  {
+    id: serial("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    grams: real("grams").notNull().default(100),
+    portionLabel: text("portion_label").notNull().default(""),
+    kcal: real("kcal").notNull(),
+    protein: real("protein").notNull(),
+    carbs: real("carbs").notNull(),
+    fat: real("fat").notNull(),
+    fiber: real("fiber").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("custom_foods_user").on(t.userId)],
+);
+
+/** Favoritos (alimento da base, receita ou alimento personalizado). */
+export const favorites = pgTable(
+  "favorites",
+  {
+    id: serial("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: text("kind").notNull(), // food | recipe | custom
+    key: text("key").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("favorites_user_kind_key").on(t.userId, t.kind, t.key)],
+);
+
+export type CustomFood = typeof customFoods.$inferSelect;
+export type Favorite = typeof favorites.$inferSelect;

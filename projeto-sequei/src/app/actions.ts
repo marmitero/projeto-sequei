@@ -2,9 +2,9 @@
 
 import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { users, accounts, foodLogs, waterLogs, workoutLogs, metrics, type WorkoutExercise } from "@/db/schema";
+import { users, accounts, foodLogs, waterLogs, workoutLogs, metrics, customFoods, favorites, type WorkoutExercise } from "@/db/schema";
 import { COOKIE, getUserId, getUser, getSessionAccount, startSession, endSession } from "@/lib/session";
 import type { Profile } from "@/lib/calc";
 import { FOOD_MAP, macrosFor } from "@/lib/foods";
@@ -12,6 +12,7 @@ import { RECIPES, recipeNutrition } from "@/lib/recipes";
 import { CARDIO, EQUIPMENT_LABELS, INJURY_LABELS } from "@/lib/exercises";
 import { hashPassword, verifyPassword, validatePassword, normalizeEmail, isValidEmail } from "@/lib/password";
 import { rateLimit } from "@/lib/ratelimit";
+import { mapOpenFoodFacts } from "@/lib/barcode";
 
 async function requireUser() {
   const user = await getUser();
@@ -186,6 +187,7 @@ export type FoodEntryInput = {
   meal: string;
   foodKey?: string;
   recipeKey?: string;
+  customId?: number;
   servings?: number;
   grams?: number;
   portionLabel?: string;
@@ -195,6 +197,10 @@ export type FoodEntryInput = {
 function buildEntry(userId: string, e: FoodEntryInput) {
   if (!isDate(e.date)) throw new Error("Data inválida");
   const base = { userId, date: e.date, meal: e.meal, portionLabel: (e.portionLabel ?? "").slice(0, 80) };
+  if (e.customId) {
+    // resolvido em addFoodEntries (precisa de query); nunca chega aqui sozinho
+    throw new Error("Entrada inválida");
+  }
   if (e.foodKey) {
     const f = FOOD_MAP[e.foodKey];
     if (!f) throw new Error("Alimento não encontrado");
@@ -236,8 +242,37 @@ function buildEntry(userId: string, e: FoodEntryInput) {
 
 export async function addFoodEntries(entries: FoodEntryInput[]) {
   const userId = await requireUser();
-  if (!entries.length) return;
-  await db.insert(foodLogs).values(entries.slice(0, 30).map((e) => buildEntry(userId, e)));
+  const list = entries.slice(0, 30);
+  if (!list.length) return;
+  const customIds = [...new Set(list.map((e) => e.customId).filter((x): x is number => !!x))];
+  const customMap = new Map<number, { name: string; grams: number; portionLabel: string; kcal: number; protein: number; carbs: number; fat: number; fiber: number }>();
+  if (customIds.length) {
+    const rows = await db.select().from(customFoods).where(and(eq(customFoods.userId, userId), inArray(customFoods.id, customIds)));
+    for (const r of rows) customMap.set(r.id, r);
+  }
+  const values = list.map((e) => {
+    if (e.customId) {
+      const c = customMap.get(e.customId);
+      if (!c) throw new Error("Alimento não encontrado");
+      if (!isDate(e.date)) throw new Error("Data inválida");
+      const s = num(e.servings, 0.25, 20, 1);
+      return {
+        userId,
+        date: e.date,
+        meal: e.meal,
+        portionLabel: (e.portionLabel ?? (c.portionLabel || `${c.grams} g`)).slice(0, 80),
+        name: c.name,
+        grams: Math.round(c.grams * s),
+        kcal: Math.round(c.kcal * s),
+        protein: +(c.protein * s).toFixed(1),
+        carbs: +(c.carbs * s).toFixed(1),
+        fat: +(c.fat * s).toFixed(1),
+        fiber: +(c.fiber * s).toFixed(1),
+      };
+    }
+    return buildEntry(userId, e);
+  });
+  await db.insert(foodLogs).values(values);
   done();
 }
 
@@ -445,4 +480,155 @@ export async function importData(payload: ImportPayload): Promise<{ ok: boolean;
 
   done();
   return { ok: true, imported };
+}
+
+// ---------- Meus alimentos, favoritos e atalhos ----------
+export type CustomFoodInput = {
+  id?: number;
+  name: string;
+  grams: number;
+  portionLabel?: string;
+  kcal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber?: number;
+};
+
+export async function saveCustomFood(input: CustomFoodInput): Promise<{ ok: boolean; id?: number; error?: string }> {
+  const userId = await requireUser();
+  const values = {
+    name: String(input.name ?? "").slice(0, 80).trim() || "Alimento",
+    grams: num(input.grams, 1, 3000, 100),
+    portionLabel: String(input.portionLabel ?? "").slice(0, 80),
+    kcal: num(input.kcal, 0, 5000, 0),
+    protein: num(input.protein, 0, 500, 0),
+    carbs: num(input.carbs, 0, 1000, 0),
+    fat: num(input.fat, 0, 500, 0),
+    fiber: num(input.fiber, 0, 200, 0),
+  };
+  if (input.id) {
+    const r = await db
+      .update(customFoods)
+      .set(values)
+      .where(and(eq(customFoods.id, input.id), eq(customFoods.userId, userId)))
+      .returning({ id: customFoods.id });
+    if (!r.length) return { ok: false, error: "Alimento não encontrado." };
+    done();
+    return { ok: true, id: r[0].id };
+  }
+  const r = await db.insert(customFoods).values({ userId, ...values }).returning({ id: customFoods.id });
+  done();
+  return { ok: true, id: r[0].id };
+}
+
+export async function deleteCustomFood(id: number) {
+  const userId = await requireUser();
+  await db.delete(customFoods).where(and(eq(customFoods.id, id), eq(customFoods.userId, userId)));
+  await db.delete(favorites).where(and(eq(favorites.userId, userId), eq(favorites.kind, "custom"), eq(favorites.key, String(id))));
+  done();
+}
+
+export async function toggleFavorite(kind: string, key: string): Promise<{ ok: boolean; favorited: boolean }> {
+  const userId = await requireUser();
+  const k = oneOf(kind, ["food", "recipe", "custom"] as const, "food");
+  const id = String(key ?? "").slice(0, 64);
+  if (!id) return { ok: false, favorited: false };
+  const existing = await db
+    .select({ id: favorites.id })
+    .from(favorites)
+    .where(and(eq(favorites.userId, userId), eq(favorites.kind, k), eq(favorites.key, id)))
+    .limit(1);
+  if (existing.length) {
+    await db.delete(favorites).where(eq(favorites.id, existing[0].id));
+    done();
+    return { ok: true, favorited: false };
+  }
+  await db.insert(favorites).values({ userId, kind: k, key: id });
+  done();
+  return { ok: true, favorited: true };
+}
+
+/** Copia os registros de uma refeição de outra data (ex.: "repetir ontem"). */
+export async function copyMeal(fromDate: string, toDate: string, meal: string): Promise<{ ok: boolean; copied: number }> {
+  const userId = await requireUser();
+  if (!isDate(fromDate) || !isDate(toDate)) return { ok: false, copied: 0 };
+  const rows = await db
+    .select()
+    .from(foodLogs)
+    .where(and(eq(foodLogs.userId, userId), eq(foodLogs.date, fromDate), eq(foodLogs.meal, meal)));
+  if (!rows.length) {
+    done();
+    return { ok: true, copied: 0 };
+  }
+  await db.insert(foodLogs).values(
+    rows.map((r) => ({
+      userId,
+      date: toDate,
+      meal: r.meal,
+      foodKey: r.foodKey,
+      recipeKey: r.recipeKey,
+      name: r.name,
+      grams: r.grams,
+      portionLabel: r.portionLabel,
+      kcal: r.kcal,
+      protein: r.protein,
+      carbs: r.carbs,
+      fat: r.fat,
+      fiber: r.fiber,
+    })),
+  );
+  done();
+  return { ok: true, copied: rows.length };
+}
+
+// ---------- Código de barras (Open Food Facts) ----------
+export async function lookupBarcode(code: string): Promise<{ ok: boolean; error?: string; product?: { name: string; kcal: number; protein: number; carbs: number; fat: number; fiber: number } }> {
+  await requireUser();
+  const c = String(code ?? "").trim();
+  if (!/^\d{6,14}$/.test(c)) return { ok: false, error: "Código de barras inválido." };
+  const key = await clientKey("barcode");
+  if (!rateLimit(key, 30, 60_000)) return { ok: false, error: "Muitas consultas. Aguarde um pouco." };
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+    const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${c}.json?fields=product_name,brands,nutriments`, {
+      signal: ctrl.signal,
+      headers: { "User-Agent": "FitVida/0.1 (acompanhamento fitness)" },
+    });
+    clearTimeout(timer);
+    if (!res.ok) return { ok: false, error: "Produto não encontrado." };
+    const product = mapOpenFoodFacts(await res.json());
+    if (!product) return { ok: false, error: "Produto sem informações nutricionais utilizáveis." };
+    return { ok: true, product };
+  } catch {
+    return { ok: false, error: "Consulta indisponível agora (sem conexão com a base de produtos)." };
+  }
+}
+
+export type LibraryData = {
+  custom: { id: number; name: string; grams: number; portionLabel: string; kcal: number; protein: number; carbs: number; fat: number; fiber: number }[];
+  favs: { kind: string; key: string }[];
+};
+
+export async function listLibrary(): Promise<LibraryData> {
+  const userId = await requireUser();
+  const [custom, favs] = await Promise.all([
+    db.select().from(customFoods).where(eq(customFoods.userId, userId)),
+    db.select({ kind: favorites.kind, key: favorites.key }).from(favorites).where(eq(favorites.userId, userId)),
+  ]);
+  return {
+    custom: custom.map((c) => ({
+      id: c.id,
+      name: c.name,
+      grams: c.grams,
+      portionLabel: c.portionLabel,
+      kcal: c.kcal,
+      protein: c.protein,
+      carbs: c.carbs,
+      fat: c.fat,
+      fiber: c.fiber,
+    })),
+    favs,
+  };
 }

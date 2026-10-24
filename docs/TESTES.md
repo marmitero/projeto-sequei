@@ -159,3 +159,20 @@ Fase 1 implementada (conta/sessão, migrações versionadas, seed, Vitest + E2E 
 2. Links/testes de CSV apontavam para `/api/export/csv` (rota inexistente) em vez de `?format=csv` — 404. Corrigido.
 
 **Escopo de CI:** `.github/workflows/ci.yml` roda typecheck → lint → build (sem banco) → testes unitários → `db:migrate` → `db:seed` → servidor de produção → E2E, com serviço PostgreSQL 16.
+
+## 12. Validação da Fase 2 (2026-10-24)
+
+Bateria final: **typecheck 0 erros · lint 0 problemas · 90/90 testes** (48 unit + 42 e2e) · build de produção OK.
+
+### Suítes novas
+- `tests/unit/features.test.ts` (9): shopping (agregação 7 dias determinística + fallback de porção), progression (parse de carga; aumento/manutenção/deload/sem sugestão), barcode (validação de código + mapeamento OFF com casos nulos), weekly (semana corrente/anterior + tendências + pctDelta).
+- `tests/e2e/features.test.ts` (11): setup de perfil; meus alimentos (salvar→listar→registrar por `customId`→2 porções no export); favoritos (marcar/listar/desmarcar); exclusão remove favorito; repetir refeição (copia de ontem + origem vazia); barcode (validação + degradação graciosa offline); logWorkout com carga + painel de progressão; atalho “repetir de ontem” no HTML; `/compras` e `/metricas` renderizam; páginas novas exigem sessão (307).
+
+### Bugs corrigidos durante os testes
+1. `bestPortion` pode devolver string vazia → shopping usa fallback “N g” (teste unitário pegou o caso).
+2. E2E do export: `format=json` sempre retorna o backup completo (`foodLogs`); `type` só filtra em CSV — testes ajustados ao formato real.
+3. Lint (react-hooks): `FavButton` não pode ser componente criado dentro do render (virou componente de módulo; prop `key` renomeada para `id`, pois `key` é reservada do React) e a lista de compras passou a usar `useSyncExternalStore` + store de `localStorage` (sem setState síncrono em efeito).
+
+### Limitações conhecidas do ambiente de teste
+- Open Food Facts é inacessível deste sandbox (rede restrita) → apenas o caminho de degradação é coberto; a integração real usa o mesmo mapper já testado por unidade.
+- Playwright segue indisponível (CDN bloqueada); a UI nova é coberta pelos e2e HTTP (HTML renderizado) + unitários da lógica pura.

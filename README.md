@@ -13,10 +13,11 @@ App web (Next.js + PostgreSQL) de acompanhamento fitness em **português (pt-BR)
 | **Onboarding** | Wizard de 6 etapas com metas em tempo real (TMB, IMC, kcal, macros, previsão de semanas até o peso-alvo) |
 | **Conta** | Cadastro/login por e-mail+senha (scrypt), sessão de 30 dias, acesso multi-dispositivo e vínculo automático do perfil anônimo |
 | **Início (dashboard)** | Anel de calorias + macros do dia, hidratação, peso/IMC, treinos da semana, evolução de peso, receita sugerida e recomendações personalizadas |
-| **Alimentação** | Diário por refeição com base TACO/USDA (113 alimentos), registro por medida caseira, item manual ou receita, cardápio sugerido com troca de opções e "feche seu dia" |
-| **Treinos** | Plano semanal gerado por objetivo/nível/local/equipamentos/lesões (55 exercícios + cardio com MET), registro de sessões e histórico |
+| **Alimentação** | Diário por refeição com base TACO/USDA (113 alimentos), registro por medida caseira, item manual, receita, favoritos, "meus alimentos", código de barras (Open Food Facts) e "repetir refeição de ontem"; cardápio sugerido com troca de opções e "feche seu dia" |
+| **Treinos** | Plano semanal gerado por objetivo/nível/local/equipamentos/lesões (55 exercícios + cardio com MET), registro de sessões, histórico e progressão de força (gráfico de carga, sugestão +5%/manter/deload, "Fiz isso" em 1 toque) |
 | **Hidratação** | Meta diária dinâmica, garrafa visual, cronograma de copos no horário, sequência (streak) |
-| **Métricas** | Peso, % gordura (fórmula da Marinha dos EUA), medidas, FC de repouso e sono — com gráficos e atualização automática das metas |
+| **Métricas** | Relatório semanal (aderência, peso, treinos) com tendências de 4 semanas; peso, % gordura (fórmula da Marinha dos EUA), medidas, FC de repouso e sono — com gráficos e atualização automática das metas |
+| **Compras** | Lista de compras gerada do cardápio dos próximos 7 dias (por categoria TACO), com checklist persistente |
 | **Receitas** | 21 receitas low-carb com nutrição calculada ingrediente a ingrediente e compatibilidade com o seu perfil |
 | **Tabela nutricional** | Tabela comparativa com busca, ordenação, simulação de porção e comparação de até 3 alimentos |
 | **Perfil** | Edição completa (tudo recalculado na hora), conta e backup (export JSON/CSV, restaurar backup) e exclusão de dados |

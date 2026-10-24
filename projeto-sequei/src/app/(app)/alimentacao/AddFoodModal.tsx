@@ -1,14 +1,15 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { Search, X, Minus, Plus, ArrowLeft, AlertTriangle, Check, ChefHat, PenLine } from "lucide-react";
-import { FOODS, FOOD_CATEGORIES, Food, foodAllowed, macrosFor, searchFoods } from "@/lib/foods";
-import { RECIPES, recipeNutrition, recipeCompatibility } from "@/lib/recipes";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { Search, X, Minus, Plus, ArrowLeft, AlertTriangle, Check, ChefHat, PenLine, Star, ScanBarcode, Trash2, Library } from "lucide-react";
+import { FOODS, FOOD_CATEGORIES, FOOD_MAP, Food, foodAllowed, macrosFor, searchFoods } from "@/lib/foods";
+import { RECIPES, recipeNutrition, recipeCompatibility, type Recipe } from "@/lib/recipes";
 import { MEALS, type Profile, type Targets } from "@/lib/calc";
-import { addFoodEntries } from "@/app/actions";
+import { addFoodEntries, toggleFavorite, deleteCustomFood, saveCustomFood, lookupBarcode, listLibrary, type LibraryData } from "@/app/actions";
 import { MacroPills, fmt } from "@/components/ui";
 
 type Totals = { kcal: number; protein: number; carbs: number; fat: number };
+type Tab = "foods" | "recipes" | "mine" | "fav" | "barcode" | "custom";
 
 function NutritionLabel({ m, grams }: { m: ReturnType<typeof macrosFor>; grams: number }) {
   const rows: [string, string, boolean?][] = [
@@ -43,6 +44,19 @@ function blockedReason(f: Food, p: Profile) {
   return "Fora do seu perfil alimentar";
 }
 
+
+function FavButton({ kind, id, active, onToggle }: { kind: "food" | "recipe" | "custom"; id: string; active: boolean; onToggle: (kind: "food" | "recipe" | "custom", id: string) => void }) {
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onToggle(kind, id); }}
+      className="btn-ghost !p-2"
+      aria-label={active ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+    >
+      <Star size={16} className={active ? "fill-amber-400 text-amber-400" : "text-slate-300"} />
+    </button>
+  );
+}
+
 export default function AddFoodModal({
   open,
   onClose,
@@ -62,7 +76,7 @@ export default function AddFoodModal({
   targets: Targets;
   totals: Totals;
 }) {
-  const [tab, setTab] = useState<"foods" | "recipes" | "custom">("foods");
+  const [tab, setTab] = useState<Tab>("foods");
   const [q, setQ] = useState("");
   const [cat, setCat] = useState<string>("");
   const [sel, setSel] = useState<Food | null>(null);
@@ -72,6 +86,17 @@ export default function AddFoodModal({
   const [pending, start] = useTransition();
   const [okMsg, setOkMsg] = useState("");
   const [custom, setCustom] = useState({ name: "", kcal: "", protein: "", carbs: "", fat: "" });
+  const [saveMine, setSaveMine] = useState(true);
+  const [library, setLibrary] = useState<LibraryData>({ custom: [], favs: [] });
+  const [bcCode, setBcCode] = useState("");
+  const [bc, setBc] = useState<null | { name: string; kcal: number; protein: number; carbs: number; fat: number; fiber: number }>(null);
+  const [bcError, setBcError] = useState("");
+
+  useEffect(() => {
+    if (open) listLibrary().then(setLibrary).catch(() => setLibrary({ custom: [], favs: [] }));
+  }, [open]);
+
+  const favSet = useMemo(() => new Set(library.favs.map((f) => `${f.kind}:${f.key}`)), [library.favs]);
 
   const list = useMemo(() => {
     const base = cat ? FOODS.filter((f) => f.cat === cat) : FOODS;
@@ -107,6 +132,45 @@ export default function AddFoodModal({
     setQty(1);
   };
 
+  const toggleFav = (kind: "food" | "recipe" | "custom", key: string) => {
+    start(async () => {
+      const r = await toggleFavorite(kind, key);
+      setLibrary((lib) => {
+        const id = `${kind}:${key}`;
+        const exists = lib.favs.some((f) => `${f.kind}:${f.key}` === id);
+        if (r.favorited && !exists) return { ...lib, favs: [...lib.favs, { kind, key }] };
+        if (!r.favorited && exists) return { ...lib, favs: lib.favs.filter((f) => `${f.kind}:${f.key}` !== id) };
+        return lib;
+      });
+    });
+  };
+
+  const addCustomItem = (id: number, name: string) => {
+    start(async () => {
+      await addFoodEntries([{ date, meal, customId: id }]);
+      flash(`${name} adicionado!`);
+    });
+  };
+
+  const searchBc = () => {
+    setBcError("");
+    setBc(null);
+    start(async () => {
+      const r = await lookupBarcode(bcCode);
+      if (r.ok && r.product) setBc(r.product);
+      else setBcError(r.error ?? "Produto não encontrado.");
+    });
+  };
+
+  const tabs: [Tab, string, typeof Search][] = [
+    ["foods", "Alimentos", Search],
+    ["recipes", "Receitas", ChefHat],
+    ["mine", "Meus", Library],
+    ["fav", "Favoritos", Star],
+    ["barcode", "Código", ScanBarcode],
+    ["custom", "Manual", PenLine],
+  ];
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
       <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
@@ -139,19 +203,12 @@ export default function AddFoodModal({
         )}
 
         {!sel && (
-          <div className="flex gap-1 px-4 pt-3">
-            {[
-              ["foods", "Alimentos", Search],
-              ["recipes", "Receitas", ChefHat],
-              ["custom", "Manual", PenLine],
-            ].map(([k, l, Icon]) => {
-              const I = Icon as typeof Search;
-              return (
-                <button key={k as string} onClick={() => setTab(k as typeof tab)} className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-sm font-semibold ${tab === k ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"}`}>
-                  <I size={15} /> {l as string}
-                </button>
-              );
-            })}
+          <div className="scrollbar-none flex gap-1 overflow-x-auto px-4 pt-3">
+            {tabs.map(([k, l, Icon]) => (
+              <button key={k} onClick={() => setTab(k)} className={`flex shrink-0 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl py-2 text-sm font-semibold ${tab === k ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-600"}`}>
+                <Icon size={15} /> {l}
+              </button>
+            ))}
           </div>
         )}
 
@@ -197,7 +254,10 @@ export default function AddFoodModal({
               <div className="grid gap-4 sm:grid-cols-2">
                 <NutritionLabel m={m} grams={grams} />
                 <div className="space-y-3 rounded-2xl bg-slate-50 p-4">
-                  <div className="text-sm font-semibold text-slate-700">Impacto no seu dia</div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold text-slate-700">Impacto no seu dia</div>
+                    <FavButton kind="food" id={sel.key} active={favSet.has(`food:${sel.key}`)} onToggle={toggleFav} />
+                  </div>
                   {(
                     [
                       ["Calorias", totals.kcal, after.kcal, targets.kcal, "kcal", "bg-slate-800"],
@@ -243,17 +303,20 @@ export default function AddFoodModal({
                 {list.map((f) => {
                   const br = blockedReason(f, profile);
                   return (
-                    <button key={f.key} onClick={() => choose(f)} className={`flex w-full items-center gap-3 py-3 text-left hover:bg-slate-50 ${br ? "opacity-55" : ""}`}>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate font-medium">{f.name}</div>
-                        <div className="mt-1 flex items-center gap-2">
-                          <MacroPills small kcal={f.kcal} p={f.p} c={f.c} f={f.f} />
-                          <span className="text-[11px] text-slate-400">/100 g</span>
+                    <div key={f.key} className={`flex w-full items-center gap-2 py-1 ${br ? "opacity-55" : ""}`}>
+                      <button onClick={() => choose(f)} className="flex flex-1 items-center gap-3 py-2 text-left hover:bg-slate-50">
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate font-medium">{f.name}</div>
+                          <div className="mt-1 flex items-center gap-2">
+                            <MacroPills small kcal={f.kcal} p={f.p} c={f.c} f={f.f} />
+                            <span className="text-[11px] text-slate-400">/100 g</span>
+                          </div>
+                          {br && <div className="mt-1 text-[11px] font-medium text-amber-600">⚠ {br}</div>}
                         </div>
-                        {br && <div className="mt-1 text-[11px] font-medium text-amber-600">⚠ {br}</div>}
-                      </div>
-                      <Plus size={18} className="text-emerald-600" />
-                    </button>
+                        <Plus size={18} className="text-emerald-600" />
+                      </button>
+                      <FavButton kind="food" id={f.key} active={favSet.has(`food:${f.key}`)} onToggle={toggleFav} />
+                    </div>
                   );
                 })}
                 {!list.length && <div className="py-8 text-center text-sm text-slate-500">Nenhum alimento encontrado. Use a aba “Manual”.</div>}
@@ -261,7 +324,7 @@ export default function AddFoodModal({
             </div>
           ) : tab === "recipes" ? (
             <div className="grid gap-2">
-              {RECIPES.map((r) => {
+              {RECIPES.map((r: Recipe) => {
                 const n = recipeNutrition(r);
                 const comp = recipeCompatibility(r, profile.diet, profile.restrictions, profile.dislikes);
                 return (
@@ -272,6 +335,7 @@ export default function AddFoodModal({
                       <MacroPills small kcal={n.kcal} p={n.protein} c={n.carbs} f={n.fat} />
                       {!comp.ok && <div className="mt-0.5 text-[11px] text-amber-600">⚠ {comp.reasons[0]}</div>}
                     </div>
+                    <FavButton kind="recipe" id={r.key} active={favSet.has(`recipe:${r.key}`)} onToggle={toggleFav} />
                     <button
                       className="btn-primary !px-3"
                       disabled={pending}
@@ -288,6 +352,169 @@ export default function AddFoodModal({
                 );
               })}
             </div>
+          ) : tab === "mine" ? (
+            <div className="space-y-2">
+              <p className="text-sm text-slate-500">Seus alimentos salvos. Toque em + para registrar 1 porção.</p>
+              {library.custom.map((c) => (
+                <div key={c.id} className="flex items-center gap-2 rounded-2xl border border-slate-200 p-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold">{c.name}</div>
+                    <div className="mt-1 flex items-center gap-2">
+                      <MacroPills small kcal={c.kcal} p={c.protein} c={c.carbs} f={c.fat} />
+                      <span className="text-[11px] text-slate-400">/{c.portionLabel || `${c.grams} g`}</span>
+                    </div>
+                  </div>
+                  <FavButton kind="custom" id={String(c.id)} active={favSet.has(`custom:${c.id}`)} onToggle={toggleFav} />
+                  <button
+                    className="btn-ghost !p-2 text-rose-500"
+                    aria-label="Excluir"
+                    onClick={() =>
+                      start(async () => {
+                        await deleteCustomFood(c.id);
+                        setLibrary((lib) => ({ ...lib, custom: lib.custom.filter((x) => x.id !== c.id) }));
+                      })
+                    }
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                  <button className="btn-primary !px-3" disabled={pending} onClick={() => addCustomItem(c.id, c.name)} aria-label="Adicionar">
+                    <Plus size={16} />
+                  </button>
+                </div>
+              ))}
+              {!library.custom.length && <div className="py-8 text-center text-sm text-slate-500">Nenhum alimento salvo ainda — use a aba “Manual” e marque “salvar”.</div>}
+            </div>
+          ) : tab === "fav" ? (
+            <div className="space-y-2">
+              <p className="text-sm text-slate-500">Seus favoritos — o caminho mais rápido para registrar o que você come sempre.</p>
+              {library.favs.map((fv) => {
+                const id = `${fv.kind}:${fv.key}`;
+                if (fv.kind === "food") {
+                  const f = FOOD_MAP[fv.key];
+                  if (!f) return null;
+                  return (
+                    <div key={id} className="flex items-center gap-2 rounded-2xl border border-slate-200 p-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold">{f.name}</div>
+                        <MacroPills small kcal={f.kcal} p={f.p} c={f.c} f={f.f} />
+                      </div>
+                      <FavButton kind="food" id={fv.key} active={favSet.has(`food:${fv.key}`)} onToggle={toggleFav} />
+                      <button className="btn-primary !px-3" disabled={pending} onClick={() => choose(f)} aria-label="Adicionar">
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  );
+                }
+                if (fv.kind === "recipe") {
+                  const r = RECIPES.find((x) => x.key === fv.key);
+                  if (!r) return null;
+                  const n = recipeNutrition(r);
+                  return (
+                    <div key={id} className="flex items-center gap-2 rounded-2xl border border-slate-200 p-3">
+                      <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${r.gradient} text-xl`}>{r.emoji}</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold">{r.name}</div>
+                        <MacroPills small kcal={n.kcal} p={n.protein} c={n.carbs} f={n.fat} />
+                      </div>
+                      <FavButton kind="recipe" id={fv.key} active={favSet.has(`recipe:${fv.key}`)} onToggle={toggleFav} />
+                      <button
+                        className="btn-primary !px-3"
+                        disabled={pending}
+                        onClick={() =>
+                          start(async () => {
+                            await addFoodEntries([{ date, meal, recipeKey: r.key, servings: 1 }]);
+                            flash(`${r.name} adicionada!`);
+                          })
+                        }
+                        aria-label="Adicionar"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                  );
+                }
+                const c = library.custom.find((x) => String(x.id) === fv.key);
+                if (!c) return null;
+                return (
+                  <div key={id} className="flex items-center gap-2 rounded-2xl border border-slate-200 p-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold">{c.name}</div>
+                      <MacroPills small kcal={c.kcal} p={c.protein} c={c.carbs} f={c.fat} />
+                    </div>
+                    <FavButton kind="custom" id={fv.key} active={favSet.has(`custom:${fv.key}`)} onToggle={toggleFav} />
+                    <button className="btn-primary !px-3" disabled={pending} onClick={() => addCustomItem(c.id, c.name)} aria-label="Adicionar">
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                );
+              })}
+              {!library.favs.length && <div className="py-8 text-center text-sm text-slate-500">Nenhum favorito ainda — toque na ⭐ de um alimento ou receita.</div>}
+            </div>
+          ) : tab === "barcode" ? (
+            <div className="space-y-3">
+              <p className="text-sm text-slate-500">Aponte a câmera ou digite o código de barras do produto (base Open Food Facts).</p>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <ScanBarcode size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    value={bcCode}
+                    onChange={(e) => setBcCode(e.target.value.replace(/\D/g, ""))}
+                    inputMode="numeric"
+                    className="input !pl-10"
+                    placeholder="Ex.: 7891234567895"
+                  />
+                </div>
+                <button className="btn-primary" onClick={searchBc} disabled={pending || bcCode.length < 6}>
+                  {pending ? "..." : "Buscar"}
+                </button>
+              </div>
+              {bcError && (
+                <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                  <AlertTriangle size={16} /> {bcError}
+                </div>
+              )}
+              {bc && (
+                <div className="space-y-3 rounded-2xl border border-slate-200 p-4">
+                  <div>
+                    <div className="text-base font-bold">{bc.name}</div>
+                    <div className="mt-1">
+                      <MacroPills small kcal={bc.kcal} p={bc.protein} c={bc.carbs} f={bc.fat} />
+                      <span className="ml-2 text-[11px] text-slate-400">/100 g</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      className="btn-primary flex-1"
+                      disabled={pending}
+                      onClick={() =>
+                        start(async () => {
+                          await addFoodEntries([{ date, meal, custom: { name: bc.name, kcal: bc.kcal, protein: bc.protein, carbs: bc.carbs, fat: bc.fat, fiber: bc.fiber }, portionLabel: "100 g" }]);
+                          flash(`${bc.name} adicionado!`);
+                          setBc(null);
+                          setBcCode("");
+                        })
+                      }
+                    >
+                      <Plus size={16} /> Adicionar 100 g
+                    </button>
+                    <button
+                      className="btn-ghost"
+                      disabled={pending}
+                      onClick={() =>
+                        start(async () => {
+                          await saveCustomFood({ name: bc.name, grams: 100, portionLabel: "100 g", kcal: bc.kcal, protein: bc.protein, carbs: bc.carbs, fat: bc.fat, fiber: bc.fiber });
+                          const lib = await listLibrary();
+                          setLibrary(lib);
+                          flash("Salvo nos meus alimentos!");
+                        })
+                      }
+                    >
+                      Salvar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           ) : (
             <div className="space-y-3">
               <p className="text-sm text-slate-500">Copie os valores do rótulo do produto (por porção consumida).</p>
@@ -303,12 +530,20 @@ export default function AddFoodModal({
                   </div>
                 ))}
               </div>
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                <input type="checkbox" checked={saveMine} onChange={(e) => setSaveMine(e.target.checked)} className="h-4 w-4 rounded border-slate-300" />
+                Salvar também em “Meus alimentos” (para reutilizar)
+              </label>
               <button
                 className="btn-primary w-full"
                 disabled={!custom.name || !custom.kcal || pending}
                 onClick={() =>
                   start(async () => {
-                    await addFoodEntries([{ date, meal, custom: { name: custom.name, kcal: +custom.kcal, protein: +custom.protein || 0, carbs: +custom.carbs || 0, fat: +custom.fat || 0 } }]);
+                    if (saveMine) {
+                      await saveCustomFood({ name: custom.name, grams: 100, portionLabel: "100 g", kcal: +custom.kcal || 0, protein: +custom.protein || 0, carbs: +custom.carbs || 0, fat: +custom.fat || 0 });
+                      setLibrary(await listLibrary());
+                    }
+                    await addFoodEntries([{ date, meal, custom: { name: custom.name, kcal: +custom.kcal, protein: +custom.protein || 0, carbs: +custom.carbs || 0, fat: +custom.fat || 0 }, portionLabel: "100 g" }]);
                     flash(`${custom.name} adicionado!`);
                     setCustom({ name: "", kcal: "", protein: "", carbs: "", fat: "" });
                   })

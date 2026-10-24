@@ -6,6 +6,7 @@ import { generateWorkoutPlan, kcalFromMet, ACTIVITY_METS, WEEKDAYS, INJURY_LABEL
 import { addDays, formatDateBR, weekdayOf, type Profile } from "@/lib/calc";
 import { logWorkout, deleteWorkout } from "@/app/actions";
 import type { WorkoutExercise } from "@/db/schema";
+import ProgressionPanel from "./ProgressionPanel";
 import { BarChart, Empty, Stat, fmt } from "@/components/ui";
 
 type Log = { id: number; date: string; title: string; kind: string; durationMin: number; kcal: number; effort: number; exercises: WorkoutExercise[]; notes: string };
@@ -160,6 +161,8 @@ export default function WorkoutPlanner({ profile, today, logs }: { profile: Prof
           </div>
         </div>
       </div>
+
+      <ProgressionPanel logs={logs} today={today} />
 
       {/* Histórico */}
       <div className="card p-5 sm:p-6">

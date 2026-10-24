@@ -2,11 +2,11 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Plus, Trash2, Shuffle, CheckCheck, Sparkles, Target, Zap } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, Shuffle, CheckCheck, Sparkles, Target, Zap, Copy } from "lucide-react";
 import { addDays, formatDateBR, mealsFor, MEALS, type Profile, type Targets } from "@/lib/calc";
 import { generateMealPlan } from "@/lib/mealplan";
 import { FOODS, foodAllowed, macrosFor, bestPortion } from "@/lib/foods";
-import { addFoodEntries, deleteFoodEntry } from "@/app/actions";
+import { addFoodEntries, deleteFoodEntry, copyMeal } from "@/app/actions";
 import { Ring, MacroRow, MacroPills, fmt, Bar } from "@/components/ui";
 import AddFoodModal from "./AddFoodModal";
 
@@ -158,9 +158,20 @@ export default function FoodDiary({ date, today, profile, targets, entries, seed
                     </div>
                   </div>
                 </div>
-                <button className="btn-primary !px-3 !py-2" onClick={() => setModal(mk)}>
-                  <Plus size={16} /> <span className="hidden sm:inline">Adicionar</span>
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    className="btn-ghost !px-2.5 !py-2 text-slate-500"
+                    title="Repetir esta refeição de ontem"
+                    aria-label="Repetir de ontem"
+                    disabled={pending}
+                    onClick={() => start(async () => { await copyMeal(addDays(date, -1), date, mk); })}
+                  >
+                    <Copy size={16} />
+                  </button>
+                  <button className="btn-primary !px-3 !py-2" onClick={() => setModal(mk)}>
+                    <Plus size={16} /> <span className="hidden sm:inline">Adicionar</span>
+                  </button>
+                </div>
               </div>
               {planMeal && <Bar value={t} max={planMeal.target.kcal} h="h-1.5" />}
               <div className="mt-2 divide-y divide-slate-100">
