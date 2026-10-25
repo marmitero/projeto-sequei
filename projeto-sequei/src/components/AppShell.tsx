@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { Home, Utensils, Dumbbell, Droplets, LineChart, ChefHat, Table2, UserRound, Menu, X, Leaf, ShoppingCart, Bell } from "lucide-react";
+import { Home, Utensils, Dumbbell, Droplets, LineChart, ChefHat, Table2, UserRound, Menu, X, Leaf, ShoppingCart, Bell, Users } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import ReminderToggle from "./ReminderToggle";
 import type { ReminderInput } from "@/lib/reminders";
@@ -16,6 +16,7 @@ const NAV = [
   { href: "/hidratacao", label: "Hidratação", icon: Droplets },
   { href: "/metricas", label: "Métricas", icon: LineChart },
   { href: "/receitas", label: "Receitas Low-Carb", icon: ChefHat },
+  { href: "/comunidade", label: "Comunidade", icon: Users },
   { href: "/tabela", label: "Tabela Nutricional", icon: Table2 },
   { href: "/perfil", label: "Meu perfil", icon: UserRound },
 ];

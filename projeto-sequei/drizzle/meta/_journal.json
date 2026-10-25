@@ -22,6 +22,13 @@
       "when": 1792937570146,
       "tag": "0002_charming_grim_reaper",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792939775661,
+      "tag": "0003_ambitious_vin_gonzales",
+      "breakpoints": true
     }
   ]
 }

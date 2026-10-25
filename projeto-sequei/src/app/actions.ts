@@ -1,10 +1,11 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { users, accounts, foodLogs, waterLogs, workoutLogs, metrics, customFoods, favorites, type WorkoutExercise } from "@/db/schema";
+import { users, accounts, foodLogs, waterLogs, workoutLogs, metrics, customFoods, favorites, communityRecipes, communityRecipeLikes, planShares, type WorkoutExercise } from "@/db/schema";
 import { COOKIE, getUserId, getUser, getSessionAccount, startSession, endSession, authCookieOpts } from "@/lib/session";
 import type { Profile } from "@/lib/calc";
 import { FOOD_MAP, macrosFor } from "@/lib/foods";
@@ -13,6 +14,7 @@ import { CARDIO, EQUIPMENT_LABELS, INJURY_LABELS } from "@/lib/exercises";
 import { hashPassword, verifyPassword, validatePassword, normalizeEmail, isValidEmail } from "@/lib/password";
 import { rateLimit } from "@/lib/ratelimit";
 import { mapOpenFoodFacts } from "@/lib/barcode";
+import { normalizeRecipeInput } from "@/lib/community";
 
 async function requireUser() {
   const user = await getUser();
@@ -631,4 +633,82 @@ export async function listLibrary(): Promise<LibraryData> {
     })),
     favs,
   };
+}
+
+// ───────────────────────────── Fase 4 — Escala ─────────────────────────────
+
+/** Receitas da comunidade */
+export async function submitCommunityRecipe(input: {
+  name: string;
+  description?: string;
+  ingredientsText?: string;
+  steps?: string;
+  tagsText?: string;
+  kcal: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+}): Promise<{ ok: boolean; id?: number; error?: string }> {
+  const userId = await requireUser();
+  const parsed = normalizeRecipeInput(input);
+  if ("error" in parsed) return { ok: false, error: parsed.error };
+  const r = await db.insert(communityRecipes).values({ userId, ...parsed }).returning({ id: communityRecipes.id });
+  return { ok: true, id: r[0].id };
+}
+
+export async function toggleCommunityLike(recipeId: number): Promise<{ ok: boolean; liked: boolean }> {
+  const userId = await requireUser();
+  const existing = await db
+    .select({ recipeId: communityRecipeLikes.recipeId })
+    .from(communityRecipeLikes)
+    .where(and(eq(communityRecipeLikes.recipeId, recipeId), eq(communityRecipeLikes.userId, userId)))
+    .limit(1);
+  if (existing.length) {
+    await db.delete(communityRecipeLikes).where(and(eq(communityRecipeLikes.recipeId, recipeId), eq(communityRecipeLikes.userId, userId)));
+    return { ok: true, liked: false };
+  }
+  await db.insert(communityRecipeLikes).values({ recipeId, userId });
+  return { ok: true, liked: true };
+}
+
+export async function deleteCommunityRecipe(id: number): Promise<{ ok: boolean }> {
+  const userId = await requireUser();
+  await db.delete(communityRecipes).where(and(eq(communityRecipes.id, id), eq(communityRecipes.userId, userId)));
+  return { ok: true };
+}
+
+/** Planos compartilhados (link somente-leitura) */
+export async function createShare(label?: string): Promise<{ ok: boolean; id?: number; token?: string; error?: string }> {
+  const userId = await requireUser();
+  const token = randomBytes(16).toString("hex");
+  const r = await db.insert(planShares).values({ userId, token, label: (label ?? "").trim().slice(0, 60) }).returning({ id: planShares.id });
+  return { ok: true, id: r[0].id, token };
+}
+
+export async function revokeShare(id: number): Promise<{ ok: boolean }> {
+  const userId = await requireUser();
+  await db.update(planShares).set({ revokedAt: new Date() }).where(and(eq(planShares.id, id), eq(planShares.userId, userId), isNull(planShares.revokedAt)));
+  return { ok: true };
+}
+
+/** Ajuste inteligente/manual de metas (overrides sobre o cálculo automático) */
+export async function applyTargetOverrides(partial: { kcal?: number; water?: number; protein?: number; carbs?: number; fat?: number; fiber?: number }): Promise<{ ok: boolean }> {
+  const userId = await requireUser();
+  const me = await getUser();
+  const current = ((me?.targetOverrides ?? {}) as Record<string, number>);
+  const next = { ...current };
+  for (const [k, v] of Object.entries(partial)) {
+    if (typeof v === "number" && Number.isFinite(v)) next[k] = v;
+    else delete next[k];
+  }
+  await db.update(users).set({ targetOverrides: next }).where(eq(users.id, userId));
+  done();
+  return { ok: true };
+}
+
+export async function clearTargetOverrides(): Promise<{ ok: boolean }> {
+  const userId = await requireUser();
+  await db.update(users).set({ targetOverrides: null }).where(eq(users.id, userId));
+  done();
+  return { ok: true };
 }

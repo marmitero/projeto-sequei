@@ -9,6 +9,8 @@ import { PageHeader } from "@/components/ui";
 import MetricsPanel from "./MetricsPanel";
 import WeeklySection from "./WeeklySection";
 import PhotosSection from "./PhotosSection";
+import GoalCoachPanel from "./GoalCoachPanel";
+import { coachRecommendations, type CoachDay } from "@/lib/goalcoach";
 
 export default async function MetricasPage() {
   const { user, profile, targets, today } = await getContext();
@@ -46,10 +48,35 @@ export default async function MetricasPage() {
     { kcal: targets.kcal, protein: targets.protein, water: targets.water },
   );
 
+  // Ajuste inteligente de metas: janela de 28 dias a partir dos dados já carregados
+  const window28: CoachDay[] = Array.from({ length: 28 }, (_, i) => {
+    const date = addDays(today, -(27 - i));
+    const dayFoods = foods.filter((f) => f.date === date);
+    return {
+      date,
+      eatenKcal: dayFoods.length ? dayFoods.reduce((a, f) => a + f.kcal, 0) : null,
+      waterMl: water.filter((w) => w.date === date).reduce((a, w) => a + w.ml, 0),
+      trained: workouts.some((w) => w.date === date),
+    };
+  });
+  const weightSeries = ms
+    .filter((m) => m.weightKg)
+    .map((m) => ({ date: m.date, kg: m.weightKg as number }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const recs = coachRecommendations({
+    targets,
+    goal: profile.goal,
+    sex: profile.sex,
+    plannedPerWeek: profile.trainingDays,
+    days: window28,
+    weights: weightSeries,
+  });
+
   return (
     <>
       <PageHeader title="Métricas" subtitle="Acompanhe peso, medidas e composição corporal. Seu peso atualiza as metas automaticamente." icon={<LineIcon size={22} />} />
       <div className="space-y-8">
+        <GoalCoachPanel recs={recs} hasOverrides={!!user.targetOverrides && Object.keys(user.targetOverrides).length > 0} />
         <WeeklySection report={report} />
         <PhotosSection today={today} initialPhotos={photoRows} />
         <MetricsPanel

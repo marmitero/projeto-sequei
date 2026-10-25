@@ -73,6 +73,7 @@ export const users = pgTable(
   trainingTime: text("training_time").notNull().default("noite"), // manha | tarde | noite
   climate: text("climate").notNull().default("temperado"),
   timezone: text("timezone").notNull().default("America/Sao_Paulo"),
+  targetOverrides: jsonb("target_overrides").$type<import("@/lib/calc").TargetOverrides | null>(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
@@ -234,3 +235,61 @@ export const progressPhotos = pgTable(
 );
 
 export type ProgressPhoto = typeof progressPhotos.$inferSelect;
+
+
+/** Receitas enviadas pela comunidade (autoral, sem moderação central). */
+export const communityRecipes = pgTable(
+  "community_recipes",
+  {
+    id: serial("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    ingredients: jsonb("ingredients").$type<{ name: string; grams: number }[]>().notNull().default([]),
+    steps: text("steps").notNull().default(""),
+    tags: text("tags").array().notNull().default([]),
+    kcal: real("kcal").notNull(),
+    protein: real("protein").notNull().default(0),
+    carbs: real("carbs").notNull().default(0),
+    fat: real("fat").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("community_recipes_user").on(t.userId)],
+);
+
+export type CommunityRecipe = typeof communityRecipes.$inferSelect;
+
+/** Curtidas de receitas da comunidade (1 por usuário por receita). */
+export const communityRecipeLikes = pgTable(
+  "community_recipe_likes",
+  {
+    recipeId: integer("recipe_id")
+      .notNull()
+      .references(() => communityRecipes.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("community_recipe_likes_unique").on(t.recipeId, t.userId)],
+);
+
+/** Links somente-leitura do plano (nutricionista ↔ aluno, família). */
+export const planShares = pgTable(
+  "plan_shares",
+  {
+    id: serial("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    token: text("token").notNull().unique(),
+    label: text("label").notNull().default(""),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    revokedAt: timestamp("revoked_at"),
+  },
+  (t) => [index("plan_shares_user").on(t.userId)],
+);
+
+export type PlanShare = typeof planShares.$inferSelect;

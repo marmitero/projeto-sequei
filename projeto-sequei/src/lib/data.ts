@@ -5,12 +5,13 @@ import { db } from "@/db";
 import { foodLogs, waterLogs, workoutLogs, metrics } from "@/db/schema";
 import { getUser, toProfile } from "./session";
 import { computeTargets, todayIn } from "./calc";
+import { clampTargets } from "./goalcoach";
 
 export async function getContext() {
   const user = await getUser();
   if (!user) redirect("/onboarding");
   const profile = toProfile(user);
-  const targets = computeTargets(profile);
+  const targets = clampTargets(computeTargets(profile), profile.sex, user.targetOverrides);
   const today = todayIn(user.timezone);
   return { user, profile, targets, today };
 }

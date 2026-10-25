@@ -220,3 +220,17 @@ Bateria final desta rodada: **typecheck 0 · lint 0 · 106/106 testes** (55 unit
 - Notificações/disparo de lembretes dependem de API do navegador (`Notification`) — testado apenas o agendamento puro e a renderização do toggle; o disparo real precisa de navegador.
 - Web Push (app fechado) e OAuth Google Fit/Apple Health não implementados (documentado como futuro no PLANEJAMENTO).
 - Critério de produto "retenção D30; streak médio ≥ 5 dias" não é mensurável no sandbox; a lógica de streak está coberta por unit tests.
+
+## 15. Validação da Fase 4 — escala, primeira leva (2026-10-25)
+
+Bateria final: **typecheck 0 · lint 0 · 121/121 testes** (63 unit + 58 e2e) · build de produção OK.
+
+### Suítes novas
+- **Unit `tests/unit/fase4.test.ts` (8)**: `clampTargets` (pisos 1200/1500, tetos), `weeklyWeightRate` (≥4 pontos em ≥14 dias), regras do coach (+100/−100 kcal, água realista com clamp, registro baixo, treino baixo, "manter" quando tudo ok), `parseIngredientLine` (—, vírgula, espaço) e `normalizeRecipeInput` (erros + happy path).
+- **E2E `tests/e2e/fase4.test.ts` (7)**: comunidade (publicar → galeria com autor → curtir/descurtir → excluir → some; receita alheia **não** pode ser excluída), planos compartilhados (criar → token de 32 hex → página pública sem cookie com nome do link + "somente leitura" + plano semanal → revogar → 404), ajuste de metas (seção em `/metricas` → aplicar override → "Restaurar metas automáticas" aparece → limpar → some), navegação com `/comunidade`.
+
+### Armadilhas encontradas (registradas para não repetir)
+- **Feed global polui asserts**: execuções repetidas acumulam receitas de usuários anteriores — usar nomes únicos (`Date.now()`) em testes de listagem/exclusão.
+- **SSR do React insere `<!-- -->`** entre texto e interpolações (`por {autor}` → `por <!-- -->Nome`) — asserts de `toContain` devem pegar só a interpolação ou um trecho sem mistura.
+- `npx vitest run -t "trecho"` **pula o `it` de setup** e deixa `cookie` vazio — rodar sempre o arquivo completo.
+- drizzle-orm 0.45: `workoutLogs.title` (não `name`); `createShare` precisa devolver `id` (revogação).

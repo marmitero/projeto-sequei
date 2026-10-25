@@ -4,11 +4,22 @@ import ProfileWizard from "@/components/ProfileWizard";
 import ResetButton from "./ResetButton";
 import AccountPanel from "./AccountPanel";
 import HealthImportPanel from "./HealthImportPanel";
+import SharePanel from "./SharePanel";
 import { getUser, toProfile, getSessionAccount } from "@/lib/session";
 import { PageHeader } from "@/components/ui";
+import { desc, eq, isNull } from "drizzle-orm";
+import { db } from "@/db";
+import { planShares } from "@/db/schema";
 
 export default async function PerfilPage() {
   const user = await getUser();
+  const shares = user
+    ? await db
+        .select({ id: planShares.id, token: planShares.token, label: planShares.label, createdAt: planShares.createdAt })
+        .from(planShares)
+        .where(eq(planShares.userId, user.id))
+        .orderBy(desc(planShares.createdAt))
+    : [];
   if (!user) redirect("/onboarding");
   const account = await getSessionAccount();
   return (
@@ -18,6 +29,9 @@ export default async function PerfilPage() {
         <AccountPanel email={account?.email ?? null} />
         <div className="mt-4">
           <HealthImportPanel />
+        </div>
+        <div className="mt-4">
+          <SharePanel shares={shares.map((s) => ({ ...s, createdAt: s.createdAt.toISOString() }))} />
         </div>
       </div>
       <ProfileWizard mode="edit" initial={toProfile(user)} />

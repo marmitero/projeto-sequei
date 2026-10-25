@@ -174,3 +174,22 @@ Regras do servidor (`addFoodEntries`): lote de até 30 itens, datas validadas, g
 
 ### 11.6 PWA
 - `manifest.webmanifest` (standalone, pt-BR, ícone `/icon.png` 512), `sw.js` com cache de assets imutáveis (`/_next/static/`, ícone, manifest) e fallback offline para navegações. Registro automático no layout raiz.
+
+## 12. Fase 4 — Escala (primeira leva)
+
+### 12.1 Planos compartilhados (nutricionista ↔ aluno, família)
+- Em `/perfil` → **"Compartilhar meu plano"**: criar link com nome (ex.: "Nutricionista Ana"), copiar URL e revogar quando quiser.
+- Página pública `/compartilhar/[token]` (sem login, **somente leitura**): resumo (objetivo, peso atual/meta, IMC, projeção), metas diárias (com overrides), plano de treino da semana, últimos 7 dias (registro, treinos, água) e evolução de peso (últimas pesagens).
+- Tabela `plan_shares` (token aleatório de 32 hex, `revokedAt` revoga em definitivo); dados sensíveis de conta (e-mail, senha) nunca são expostos.
+
+### 12.2 Receitas da comunidade (`/comunidade`)
+- Publicar receita: nome, descrição, ingredientes (um por linha — "Item — 150 g"), modo de preparo, tags e macros da porção. Validação em `src/lib/community.ts` (nome 3–80, kcal 1–5000, máx. 30 ingredientes/6 tags).
+- Galeria (até 100) com autor, macros, tags e curtidas (1 por usuário, alternável). Só o autor exclui a própria receita.
+
+### 12.3 Ajuste inteligente de metas (`/metricas`)
+- Motor determinístico (regras auditáveis, sem LLM) sobre 28 dias:
+  - **Peso**: variação semanal (mín. 4 pesagens em 14 dias) vs. projeção do ritmo (leve/moderado/agressivo) → +100 kcal (evolução rápida demais) ou −100 kcal (lenta demais);
+  - **Registro** < 60% dos dias → dica de hábito (não mexe em metas);
+  - **Água** com média < 70% da meta (≥5 dias) → meta realista em passos de 250 ml (piso 1500 ml);
+  - **Treino** < 50% do planejado → dica de constância.
+- "Aplicar ajuste" grava `users.target_overrides` (aplicado sobre `computeTargets` com pisos/tetos); "Restaurar metas automáticas" limpa tudo.

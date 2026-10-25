@@ -88,8 +88,16 @@ Corrigir os 8 erros de lint; env-driven config + build sem banco; renomear packa
 >
 > **Limitações honestas (futuro):** notificações só funcionam com o app aberto (Web Push/VAPID com service worker exige servidor de push — fora do escopo); integração Google Fit/Apple Health é por arquivo (OAuth das APIs exige credenciais/configuração do usuário); o critério retenção D30 e o streak médio ≥ 5 dias são métricas de produto — deriváveis dos dados (`daily streaks` em `src/lib/gamification.ts`), mas não mensuráveis no ambiente de teste. Envio do relatório semanal por push/e-mail permanece pendente (mencionado na Fase 2).
 
-### Fase 4 — Escala (contínuo)
+### Fase 4 — Escala (contínuo) 🟡 **primeira leva concluída em 2026-10-25**
 - Planos compartilhados (nutricionista ↔ aluno), família; i18n; receitas da comunidade; ajuste de metas por IA com base na aderência real; apps nativos se houver tração.
+
+> **Status (leva implementada):**
+> - **Planos compartilhados** ✅ — links somente-leitura (`plan_shares`, migração `0003`): criação/cópia/revogação em `/perfil`; página pública `/compartilhar/[token]` com resumo, metas, plano semanal, últimos 7 dias e evolução de peso. Cobre nutricionista ↔ aluno **e** acompanhamento familiar pelo mesmo mecanismo.
+> - **Receitas da comunidade** ✅ — `/comunidade`: publicar (validação pura em `src/lib/community.ts`), galeria com macros/tags/autor, curtidas (1/usuário/receita), excluir a própria (a alheia não pode ser excluída — testado). Tabelas `community_recipes` + `community_recipe_likes`.
+> - **Ajuste de metas com base na aderência real** ✅ — motor **determinístico de regras** (`src/lib/goalcoach.ts`, sem LLM externo — nome honesto: "Ajuste inteligente de metas"): compara tendência de peso (≥4 pesagens em ≥14 dias) com a projeção do ritmo, aderência de registro (28 dias), hidratação média e treinos planejados × realizados; recomenda e aplica ajustes finos (±100 kcal; água realista em passos de 250 ml) com pisos/tetos seguros (`clampTargets`: 1200/1500 kcal, 1500–6000 ml). Overrides em `users.target_overrides` aplicados em `getContext` ("Restaurar metas automáticas" volta ao cálculo). UI em `/metricas`.
+> - 121/121 testes (63 unit + 58 e2e) — ver [TESTES.md §15](./TESTES.md).
+>
+> **Fora desta leva (futuro, com justificativa):** **i18n** (exige decisão de idiomas-alvo e extração completa das ~500 strings PT-BR — refactor transversal que merece rodada própria); **grupos de família com contas vinculadas** (além do compartilhamento por link, exige convites/permissões — design de produto); **apps nativos** (exigem contas de loja/tração — como previsto no plano); **IA com modelo externo** (LLM requer credenciais/APIs de terceiras fora do sandbox; o motor atual é auditável e offline); envio de relatório por push/e-mail segue pendente desde a Fase 2/3 (Web Push).
 
 ## 5. Riscos e decisões
 

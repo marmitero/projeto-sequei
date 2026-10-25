@@ -84,6 +84,16 @@ export function navyBodyFat(sex: string, heightCm: number, waist?: number | null
   return 495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.221 * Math.log10(heightCm)) - 450;
 }
 
+/** Overrides parciais de metas (ajuste inteligente/manual). */
+export type TargetOverrides = {
+  kcal?: number;
+  water?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  fiber?: number;
+};
+
 export type Targets = {
   bmr: number;
   tdee: number;
