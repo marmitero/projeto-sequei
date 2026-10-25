@@ -54,9 +54,9 @@ export function Bar({ value, max, color = "bg-emerald-500", h = "h-2" }: { value
 }
 
 export const MACRO_COLORS = {
-  protein: { bar: "bg-rose-500", text: "text-rose-600", hex: "#f43f5e", soft: "bg-rose-50", label: "Proteína" },
-  carbs: { bar: "bg-amber-400", text: "text-amber-600", hex: "#f59e0b", soft: "bg-amber-50", label: "Carboidrato" },
-  fat: { bar: "bg-sky-500", text: "text-sky-600", hex: "#0ea5e9", soft: "bg-sky-50", label: "Gordura" },
+  protein: { bar: "bg-rose-500", text: "text-rose-600 dark:text-rose-400", hex: "#f43f5e", soft: "bg-rose-50", label: "Proteína" },
+  carbs: { bar: "bg-amber-400", text: "text-amber-600 dark:text-amber-400", hex: "#f59e0b", soft: "bg-amber-50", label: "Carboidrato" },
+  fat: { bar: "bg-sky-500", text: "text-sky-600 dark:text-sky-400", hex: "#0ea5e9", soft: "bg-sky-50", label: "Gordura" },
   fiber: { bar: "bg-lime-500", text: "text-lime-700", hex: "#84cc16", soft: "bg-lime-50", label: "Fibras" },
 };
 
@@ -79,10 +79,10 @@ export function MacroPills({ p, c, f, kcal, small }: { p: number; c: number; f: 
   const cls = small ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-0.5 text-xs";
   return (
     <div className="flex flex-wrap items-center gap-1">
-      {kcal !== undefined && <span className={`rounded-md bg-slate-900 font-semibold text-white ${cls}`}>{Math.round(kcal)} kcal</span>}
-      <span className={`rounded-md bg-rose-50 font-semibold text-rose-600 ${cls}`}>P {fmt(p)}</span>
-      <span className={`rounded-md bg-amber-50 font-semibold text-amber-600 ${cls}`}>C {fmt(c)}</span>
-      <span className={`rounded-md bg-sky-50 font-semibold text-sky-600 ${cls}`}>G {fmt(f)}</span>
+      {kcal !== undefined && <span className={`rounded-md bg-[#0f172a] font-semibold text-white ${cls}`}>{Math.round(kcal)} kcal</span>}
+      <span className={`rounded-md bg-rose-50 font-semibold text-rose-600 dark:text-rose-400 ${cls}`}>P {fmt(p)}</span>
+      <span className={`rounded-md bg-amber-50 font-semibold text-amber-600 dark:text-amber-400 ${cls}`}>C {fmt(c)}</span>
+      <span className={`rounded-md bg-sky-50 font-semibold text-sky-600 dark:text-sky-400 ${cls}`}>G {fmt(f)}</span>
     </div>
   );
 }
@@ -108,10 +108,10 @@ export function PageHeader({ title, subtitle, icon, action }: { title: string; s
 
 export function Stat({ label, value, sub, icon, tone = "emerald" }: { label: string; value: ReactNode; sub?: ReactNode; icon?: ReactNode; tone?: string }) {
   const tones: Record<string, string> = {
-    emerald: "bg-emerald-50 text-emerald-600",
-    sky: "bg-sky-50 text-sky-600",
-    rose: "bg-rose-50 text-rose-600",
-    amber: "bg-amber-50 text-amber-600",
+    emerald: "bg-emerald-50 text-emerald-600 dark:text-emerald-400",
+    sky: "bg-sky-50 text-sky-600 dark:text-sky-400",
+    rose: "bg-rose-50 text-rose-600 dark:text-rose-400",
+    amber: "bg-amber-50 text-amber-600 dark:text-amber-400",
     violet: "bg-violet-50 text-violet-600",
     cyan: "bg-cyan-50 text-cyan-600",
   };

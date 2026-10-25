@@ -78,7 +78,7 @@ export default function WorkoutPlanner({ profile, today, logs }: { profile: Prof
             <>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-wide text-emerald-600">{WEEKDAYS[session.weekday]}</div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">{WEEKDAYS[session.weekday]}</div>
                   <h2 className="text-2xl font-bold">{session.title}</h2>
                   <p className="text-sm text-slate-500">{session.focus}</p>
                   <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
@@ -96,12 +96,12 @@ export default function WorkoutPlanner({ profile, today, logs }: { profile: Prof
                 </button>
               </div>
               {profile.injuries.length > 0 && (
-                <div className="mt-4 flex items-start gap-2 rounded-2xl bg-sky-50 p-3 text-sm text-sky-800">
+                <div className="mt-4 flex items-start gap-2 rounded-2xl bg-sky-50 p-3 text-sm text-sky-800 dark:text-sky-300">
                   <ShieldCheck size={16} className="mt-0.5 shrink-0" />
                   Exercícios de risco para {profile.injuries.map((i) => INJURY_LABELS[i]?.toLowerCase()).join(", ")} foram excluídos. Pare se sentir dor.
                 </div>
               )}
-              <div className="mt-4 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900">
+              <div className="mt-4 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200">
                 <b>Aquecimento:</b> {session.warmup}
               </div>
               <ol className="mt-4 space-y-2">
@@ -182,7 +182,7 @@ export default function WorkoutPlanner({ profile, today, logs }: { profile: Prof
                   </div>
                 </div>
                 <div className="text-right text-sm font-bold text-orange-600">{fmt(l.kcal)} kcal</div>
-                <button className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600" disabled={pending} onClick={() => start(() => deleteWorkout(l.id))} aria-label="Remover">
+                <button className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400" disabled={pending} onClick={() => start(() => deleteWorkout(l.id))} aria-label="Remover">
                   <Trash2 size={15} />
                 </button>
               </div>
@@ -223,8 +223,8 @@ function LogModal({ profile, today, session, onClose }: { profile: Profile; toda
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl bg-white animate-fade-up sm:rounded-3xl">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl bg-white dark:bg-slate-100 animate-fade-up sm:rounded-3xl">
         <div className="flex items-center justify-between border-b border-slate-100 p-4">
           <div className="font-bold">{session ? `Registrar: ${session.title}` : "Registrar atividade"}</div>
           <button className="btn-ghost !p-2" onClick={onClose} aria-label="Fechar">

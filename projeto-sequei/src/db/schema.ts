@@ -1,4 +1,5 @@
 import {
+  customType,
   pgTable,
   uuid,
   text,
@@ -34,6 +35,11 @@ export const sessions = pgTable(
   },
   (t) => [index("sessions_account").on(t.accountId)],
 );
+
+// Coluna bytea (drizzle-orm 0.45 não expõe `bytea` pronto)
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType: () => "bytea",
+});
 
 export const users = pgTable(
   "users",
@@ -209,3 +215,22 @@ export const favorites = pgTable(
 
 export type CustomFood = typeof customFoods.$inferSelect;
 export type Favorite = typeof favorites.$inferSelect;
+
+/** Fotos de progresso (bytes no banco — app pessoal, sem storage externo). */
+export const progressPhotos = pgTable(
+  "progress_photos",
+  {
+    id: serial("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    date: text("date").notNull(),
+    label: text("label").notNull().default(""),
+    mime: text("mime").notNull().default("image/jpeg"),
+    data: bytea("data").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("progress_photos_user").on(t.userId, t.date)],
+);
+
+export type ProgressPhoto = typeof progressPhotos.$inferSelect;

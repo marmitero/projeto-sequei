@@ -201,3 +201,22 @@ Solicitada pelo usuário após relatar: (a) login/cadastro não funcionava; (b) 
 - Cadastro → logout → login: `fit_session` emitido/revogado corretamente; login em "outro dispositivo" (só sessão) sincroniza `fituid` e abre o dashboard. Conta sem perfil cai no onboarding (comportamento correto).
 - Matriz de `Origin`/`Host`/`X-Forwarded-Host` após a correção: os 3 cenários passam do CSRF.
 - Smoke: `/`, `/alimentacao`, `/compras`, `/exercicios`, `/hidratacao`, `/metricas`, `/receitas`, `/tabela`, `/perfil`, `/login`, `/cadastro`, `/onboarding`, `/api/health`, `/api/export` → 200; rota inexistente → 404; headers: CSP `frame-ancestors` presente, `nosniff` presente.
+
+## 14. Validação da Fase 3 — engajamento (2026-10-25)
+
+Bateria final desta rodada: **typecheck 0 · lint 0 · 106/106 testes** (55 unit + 51 e2e) · build de produção OK · smoke PWA (manifest/sw/ícone 200).
+
+### Suítes novas
+- **Unit `tests/unit/engagement.test.ts` (7)**: streaks (terminando hoje/ontem, recorde), marcos (patamares + progresso), agenda de lembretes (distribuição de água na janela acordar–dormir, treino por período/semana, pesagem semanal, `dueSlots` por dia da semana), parsers de saúde (Apple Health kg/lb + gordura + sono com datas HealthKit; CSV de peso com `,`/`;` e decimal vírgula; detecção automática de formato e arquivos sem dados).
+- **E2E `tests/e2e/engagement.test.ts` (6)**: fotos (upload multipart → lista → download → exclusão → 404), import de saúde (CSV → 2 dias de métricas visíveis em `/metricas`), PWA (`manifest.webmanifest` com `standalone`, `sw.js` com cache `fitvida-v1`, `/icon.png`), modo escuro (script anti-FOUC `fitvida-theme` no HTML) + gamificação no dashboard ("Sequências e marcos"), botão de lembretes renderizado.
+
+### Notas de implementação
+- `bytea` não existe no drizzle-orm 0.45 → `customType` local em `src/db/schema.ts` (migração `0002_charming_grim_reaper.sql`).
+- Datas do HealthKit (`2026-10-20 23:10:00 -0300`) exigem parser próprio (o `Date.parse` padrão falha no offset sem dois-pontos).
+- Upload/import por **route handlers** (`/api/photos`, `/api/health-import`) — server actions têm limite de corpo de 1 MB, incompatível com fotos/exports.
+- `react-hooks/set-state-in-effect` (lint): ThemeToggle e ReminderToggle via `useSyncExternalStore`; fotos iniciais vêm do servidor (props) em vez de fetch em effect.
+
+### Limitações conhecidas do ambiente de teste
+- Notificações/disparo de lembretes dependem de API do navegador (`Notification`) — testado apenas o agendamento puro e a renderização do toggle; o disparo real precisa de navegador.
+- Web Push (app fechado) e OAuth Google Fit/Apple Health não implementados (documentado como futuro no PLANEJAMENTO).
+- Critério de produto "retenção D30; streak médio ≥ 5 dias" não é mensurável no sandbox; a lógica de streak está coberta por unit tests.

@@ -70,7 +70,7 @@ export default function ShoppingList({ groups, weekKey }: { groups: ShoppingGrou
   return (
     <div className="space-y-4">
       <div className="card flex flex-wrap items-center gap-3 p-4">
-        <ListChecks size={18} className="text-emerald-600" />
+        <ListChecks size={18} className="text-emerald-600 dark:text-emerald-400" />
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold">
             {done} de {total} itens comprados
@@ -102,7 +102,7 @@ export default function ShoppingList({ groups, weekKey }: { groups: ShoppingGrou
                       {it.portion} · ~{it.kcal} kcal
                     </span>
                   </span>
-                  <span className={`text-sm font-bold tabular-nums ${on ? "text-slate-300" : "text-emerald-600"}`}>{it.totalGrams} g</span>
+                  <span className={`text-sm font-bold tabular-nums ${on ? "text-slate-300" : "text-emerald-600 dark:text-emerald-400"}`}>{it.totalGrams} g</span>
                 </button>
               );
             })}

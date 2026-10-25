@@ -83,7 +83,7 @@ export default function AccountPanel({ email }: { email: string | null }) {
 
       <div className="mt-6 border-t border-slate-100 pt-5">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <Download size={16} className="text-emerald-600" /> Exportar dados
+          <Download size={16} className="text-emerald-600 dark:text-emerald-400" /> Exportar dados
         </h3>
         <div className="mt-3 flex flex-wrap gap-2">
           <a href="/api/export?format=json" className="btn-primary" download>
@@ -99,7 +99,7 @@ export default function AccountPanel({ email }: { email: string | null }) {
 
       <div className="mt-6 border-t border-slate-100 pt-5">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <Upload size={16} className="text-emerald-600" /> Restaurar backup
+          <Upload size={16} className="text-emerald-600 dark:text-emerald-400" /> Restaurar backup
         </h3>
         <p className="mt-1 text-xs text-slate-500">
           Importe um backup JSON exportado pelo FitVida. Registros são adicionados ao seu histórico (métricas do mesmo
@@ -119,8 +119,8 @@ export default function AccountPanel({ email }: { email: string | null }) {
         <button className="btn-outline mt-3" disabled={pending} onClick={() => fileRef.current?.click()}>
           {pending ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />} Escolher arquivo JSON
         </button>
-        {msg && <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{msg}</p>}
-        {err && <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">{err}</p>}
+        {msg && <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">{msg}</p>}
+        {err && <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:text-rose-400">{err}</p>}
       </div>
     </div>
   );

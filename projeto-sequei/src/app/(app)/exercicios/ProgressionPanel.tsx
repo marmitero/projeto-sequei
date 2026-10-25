@@ -79,7 +79,7 @@ export default function ProgressionPanel({ logs, today }: { logs: Log[]; today: 
     <div className="card p-5 sm:p-6">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 font-bold">
-          <LineChart size={18} className="text-emerald-600" /> Progressão de força
+          <LineChart size={18} className="text-emerald-600 dark:text-emerald-400" /> Progressão de força
         </h2>
         <select className="input !w-auto !py-2 text-sm" value={selected} onChange={(e) => setName(e.target.value)} aria-label="Exercício">
           {names.map((n) => (
@@ -94,12 +94,12 @@ export default function ProgressionPanel({ logs, today }: { logs: Log[]; today: 
 
       <div className="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
         <div className="flex items-start gap-2">
-          <TrendingUp size={18} className="mt-0.5 shrink-0 text-emerald-600" />
+          <TrendingUp size={18} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
           <div className="min-w-0 flex-1">
             <div className="text-sm font-semibold text-emerald-900">
               Sugestão: {sug.action === "increase" ? "progredir carga" : sug.action === "maintain" ? "manter carga" : sug.action === "deload" ? "aliviar (deload)" : "sem sugestão ainda"}
             </div>
-            <p className="mt-0.5 text-sm text-emerald-800">{sug.text}</p>
+            <p className="mt-0.5 text-sm text-emerald-800 dark:text-emerald-300">{sug.text}</p>
           </div>
         </div>
         {sug.action !== "none" && nextKg != null && (

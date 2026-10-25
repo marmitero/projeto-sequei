@@ -77,11 +77,11 @@ export default function FoodDiary({ date, today, profile, targets, entries, seed
           <div className="mt-3 text-sm text-slate-600">
             {targets.kcal - totals.kcal >= 0 ? (
               <>
-                Restam <b className="text-emerald-600">{fmt(targets.kcal - totals.kcal)} kcal</b>
+                Restam <b className="text-emerald-600 dark:text-emerald-400">{fmt(targets.kcal - totals.kcal)} kcal</b>
               </>
             ) : (
               <>
-                <b className="text-rose-600">{fmt(totals.kcal - targets.kcal)} kcal</b> acima da meta
+                <b className="text-rose-600 dark:text-rose-400">{fmt(totals.kcal - targets.kcal)} kcal</b> acima da meta
               </>
             )}
           </div>
@@ -94,9 +94,9 @@ export default function FoodDiary({ date, today, profile, targets, entries, seed
           <div className="grid grid-cols-3 gap-2 pt-1 text-center text-xs">
             {(
               [
-                ["Proteína", totals.protein * 4, "text-rose-600"],
-                ["Carbo", totals.carbs * 4, "text-amber-600"],
-                ["Gordura", totals.fat * 9, "text-sky-600"],
+                ["Proteína", totals.protein * 4, "text-rose-600 dark:text-rose-400"],
+                ["Carbo", totals.carbs * 4, "text-amber-600 dark:text-amber-400"],
+                ["Gordura", totals.fat * 9, "text-sky-600 dark:text-sky-400"],
               ] as const
             ).map(([l, kc, c]) => (
               <div key={l} className="rounded-xl bg-slate-50 py-2">
@@ -182,7 +182,7 @@ export default function FoodDiary({ date, today, profile, targets, entries, seed
                       <div className="text-xs text-slate-500">{e.portionLabel || `${fmt(e.grams)} g`}</div>
                     </div>
                     <MacroPills small kcal={e.kcal} p={e.protein} c={e.carbs} f={e.fat} />
-                    <button className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600" onClick={() => start(() => deleteFoodEntry(e.id))} aria-label="Remover">
+                    <button className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400" onClick={() => start(() => deleteFoodEntry(e.id))} aria-label="Remover">
                       <Trash2 size={15} />
                     </button>
                   </div>
@@ -199,7 +199,7 @@ export default function FoodDiary({ date, today, profile, targets, entries, seed
         <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="flex items-center gap-2 text-xl font-bold">
-              <Sparkles size={20} className="text-emerald-600" /> Cardápio sugerido para você
+              <Sparkles size={20} className="text-emerald-600 dark:text-emerald-400" /> Cardápio sugerido para você
             </h2>
             <p className="text-sm text-slate-500">
               {profile.mealsPerDay} refeições · {targets.kcal} kcal · dieta {profile.diet}

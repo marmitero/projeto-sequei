@@ -147,12 +147,12 @@ export default function MetricsPanel({
         {/* Formulário */}
         <div className="card p-5 sm:p-6">
           <h2 className="mb-3 flex items-center gap-2 font-bold">
-            <Ruler size={18} className="text-emerald-600" /> Registrar medidas
+            <Ruler size={18} className="text-emerald-600 dark:text-emerald-400" /> Registrar medidas
           </h2>
           <div className="mb-3">
             <label className="label">Data</label>
             <input type="date" className="input" value={date} max={today} onChange={(e) => changeDate(e.target.value)} />
-            {existing && <p className="mt-1 text-xs text-amber-600">Já existe registro nesta data — salvar irá atualizar.</p>}
+            {existing && <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">Já existe registro nesta data — salvar irá atualizar.</p>}
           </div>
           <div className="grid grid-cols-2 gap-3">
             {FIELDS.map((f) => (
@@ -204,11 +204,11 @@ export default function MetricsPanel({
               <div className="mt-4 space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Relação cintura/quadril</span>
-                  <b className={rcqRisk ? "text-rose-600" : "text-emerald-600"}>{rcq ? `${fmt(rcq, 2)} ${rcqRisk ? "· risco" : "· ok"}` : "—"}</b>
+                  <b className={rcqRisk ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}>{rcq ? `${fmt(rcq, 2)} ${rcqRisk ? "· risco" : "· ok"}` : "—"}</b>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Relação cintura/altura</span>
-                  <b className={rca && rca >= 0.5 ? "text-rose-600" : "text-emerald-600"}>{rca ? `${fmt(rca, 2)} ${rca >= 0.5 ? "· acima de 0,5" : "· ok"}` : "—"}</b>
+                  <b className={rca && rca >= 0.5 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}>{rca ? `${fmt(rca, 2)} ${rca >= 0.5 ? "· acima de 0,5" : "· ok"}` : "—"}</b>
                 </div>
               </div>
             </div>
@@ -295,7 +295,7 @@ export default function MetricsPanel({
                     <td>{m.thighCm ?? "—"}</td>
                     <td>{m.sleepHours ?? "—"}</td>
                     <td className="text-right">
-                      <button className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600" onClick={() => start(() => deleteMetric(m.id))} aria-label="Remover">
+                      <button className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400" onClick={() => start(() => deleteMetric(m.id))} aria-label="Remover">
                         <Trash2 size={15} />
                       </button>
                     </td>

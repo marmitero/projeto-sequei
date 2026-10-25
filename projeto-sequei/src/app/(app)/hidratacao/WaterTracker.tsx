@@ -109,14 +109,14 @@ export default function WaterTracker({
                 <div className="absolute -top-2 left-0 right-0 h-4 animate-pulse rounded-[50%] bg-cyan-300/70" />
               </div>
               <div className="absolute inset-0 grid place-items-center">
-                <span className={`text-2xl font-black ${pct > 0.5 ? "text-white" : "text-sky-700"}`}>{Math.round((total / goal) * 100)}%</span>
+                <span className={`text-2xl font-black ${pct > 0.5 ? "text-white" : "text-sky-700 dark:text-sky-300"}`}>{Math.round((total / goal) * 100)}%</span>
               </div>
             </div>
             <div>
               <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Hoje</div>
-              <div className="text-4xl font-black tabular-nums text-sky-700">{(total / 1000).toFixed(2).replace(".", ",")}L</div>
+              <div className="text-4xl font-black tabular-nums text-sky-700 dark:text-sky-300">{(total / 1000).toFixed(2).replace(".", ",")}L</div>
               <div className="text-sm text-slate-500">meta {(goal / 1000).toFixed(2).replace(".", ",")} L</div>
-              <div className="mt-3 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-800">{total >= goal ? "🎉 Meta batida!" : `Faltam ${fmt(goal - total)} ml`}</div>
+              <div className="mt-3 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-800 dark:text-sky-300">{total >= goal ? "🎉 Meta batida!" : `Faltam ${fmt(goal - total)} ml`}</div>
               {streak > 0 && <div className="mt-2 text-sm font-semibold text-orange-600">🔥 {streak} dia(s) seguidos na meta</div>}
             </div>
           </div>
@@ -131,7 +131,7 @@ export default function WaterTracker({
               return (
                 <button key={q.ml} disabled={pending} onClick={() => add(q.ml)} className="group flex flex-col items-center gap-1 rounded-2xl border-2 border-sky-100 bg-sky-50/50 p-4 transition hover:border-sky-400 hover:bg-sky-50 active:scale-95">
                   <Icon size={26} className="text-sky-500 transition group-hover:scale-110" />
-                  <span className="text-lg font-bold text-sky-800">{q.ml} ml</span>
+                  <span className="text-lg font-bold text-sky-800 dark:text-sky-300">{q.ml} ml</span>
                   <span className="text-xs text-slate-500">{q.label}</span>
                 </button>
               );
@@ -157,7 +157,7 @@ export default function WaterTracker({
                 {todayLogs.map((l) => (
                   <span key={l.id} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 py-1 pl-3 pr-1 text-sm">
                     {new Date(l.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: timezone })} · {l.ml} ml
-                    <button className="rounded-full p-1 text-slate-400 hover:bg-rose-100 hover:text-rose-600" onClick={() => start(() => deleteWater(l.id))} aria-label="Remover">
+                    <button className="rounded-full p-1 text-slate-400 hover:bg-rose-100 hover:text-rose-600 dark:text-rose-400" onClick={() => start(() => deleteWater(l.id))} aria-label="Remover">
                       <Trash2 size={12} />
                     </button>
                   </span>
@@ -184,14 +184,14 @@ export default function WaterTracker({
               const late = nowMin !== null && !done && nowMin > s.minute + 45;
               return (
                 <li key={i} className="relative">
-                  <span className={`absolute -left-[29px] top-2 grid h-4 w-4 place-items-center rounded-full border-2 ${done ? "border-emerald-500 bg-emerald-500" : isNow ? "border-sky-500 bg-white" : "border-slate-300 bg-white"}`} />
+                  <span className={`absolute -left-[29px] top-2 grid h-4 w-4 place-items-center rounded-full border-2 ${done ? "border-emerald-500 bg-emerald-500" : isNow ? "border-sky-500 bg-white dark:bg-slate-100" : "border-slate-300 bg-white dark:bg-slate-100"}`} />
                   <div className={`flex items-center justify-between rounded-xl px-3 py-2 ${isNow ? "bg-sky-50 ring-2 ring-sky-200" : done ? "bg-emerald-50/50" : ""}`}>
                     <div>
                       <span className="font-mono text-sm font-bold">{s.time}</span>
-                      <span className={`ml-2 text-sm ${done ? "text-emerald-700 line-through decoration-emerald-300" : "text-slate-700"}`}>{s.ml} ml</span>
+                      <span className={`ml-2 text-sm ${done ? "text-emerald-700 dark:text-emerald-300 line-through decoration-emerald-300" : "text-slate-700"}`}>{s.ml} ml</span>
                       {s.note && <div className="text-[11px] text-slate-500">{s.note}</div>}
                     </div>
-                    {done ? <span className="text-xs font-semibold text-emerald-600">✓ feito</span> : isNow ? <button className="btn-primary !px-2.5 !py-1 text-xs" onClick={() => add(s.ml)}>Beber agora</button> : late ? <span className="text-xs text-amber-600">atrasado</span> : null}
+                    {done ? <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">✓ feito</span> : isNow ? <button className="btn-primary !px-2.5 !py-1 text-xs" onClick={() => add(s.ml)}>Beber agora</button> : late ? <span className="text-xs text-amber-600 dark:text-amber-400">atrasado</span> : null}
                   </div>
                 </li>
               );

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --color-brand-50: #ecfdf5;
@@ -13,6 +15,47 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ---------- Modo escuro: remapeia as variáveis da paleta (Tailwind v4) ----------
+   Superfícies claras (slate-50/100/200) viram superfícies escuras e os tons de
+   texto (slate-600→950) viram tons claros. Cores fixas intencionais (sidebar,
+   selos escuros, overlays) usam hex arbitrário e não são afetadas. */
+.dark {
+  color-scheme: dark;
+  --color-slate-50: #0b1220;
+  --color-slate-100: #121c33;
+  --color-slate-200: #22304f;
+  --color-slate-300: #35436a;
+  --color-slate-400: #7f8fb3;
+  --color-slate-500: #9aabcd;
+  --color-slate-600: #b9c6de;
+  --color-slate-700: #d3dcec;
+  --color-slate-800: #e6ecf7;
+  --color-slate-900: #f1f5fb;
+  --color-slate-950: #f8fafc;
+  --color-emerald-50: #0a2e23;
+  --color-emerald-100: #0e3c2e;
+  --color-amber-50: #2e2507;
+  --color-amber-100: #3c310c;
+  --color-rose-50: #2e1220;
+  --color-rose-100: #3c1828;
+  --color-sky-50: #0c2740;
+  --color-sky-100: #12324f;
+  --color-orange-50: #2e1c07;
+  --color-orange-100: #3c260c;
+}
+
+.dark body {
+  color: #e6ecf7;
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgba(16, 185, 129, 0.12), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(56, 189, 248, 0.1), transparent 60%),
+    #0b1220;
+}
+
+.dark ::selection {
+  background: rgba(16, 185, 129, 0.35);
+}
+
 body {
   background:
     radial-gradient(1200px 600px at 100% -10%, rgba(16, 185, 129, 0.08), transparent 60%),
@@ -22,7 +65,7 @@ body {
 }
 
 @utility card {
-  @apply rounded-3xl border border-slate-200/70 bg-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.05)] backdrop-blur;
+  @apply rounded-3xl border border-slate-200/70 bg-white/90 shadow-[0_8px_30px_rgba(15,23,42,0.05)] backdrop-blur dark:border-slate-200 dark:bg-slate-100/90 dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)];
 }
 
 @utility btn {
@@ -35,11 +78,11 @@ body {
   @apply btn bg-slate-100 text-slate-700 hover:bg-slate-200;
 }
 @utility btn-outline {
-  @apply btn border border-slate-200 bg-white text-slate-700 hover:bg-slate-50;
+  @apply btn border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-200 dark:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-200;
 }
 
 @utility input {
-  @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/15;
+  @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/15 dark:border-slate-200 dark:bg-slate-100;
 }
 @utility label {
   @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500;
@@ -48,10 +91,10 @@ body {
   @apply inline-flex cursor-pointer select-none items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition;
 }
 @utility chip-on {
-  @apply chip border-emerald-500 bg-emerald-50 text-emerald-700;
+  @apply chip border-emerald-500 bg-emerald-50 text-emerald-700 dark:text-emerald-300;
 }
 @utility chip-off {
-  @apply chip border-slate-200 bg-white text-slate-600 hover:border-slate-300;
+  @apply chip border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-200 dark:bg-slate-100 dark:text-slate-300;
 }
 
 .scrollbar-none::-webkit-scrollbar {

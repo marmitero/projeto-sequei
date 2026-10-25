@@ -69,7 +69,7 @@ export default function AuthForm({ mode }: { mode: "login" | "cadastro" }) {
             <input id="confirm" type="password" className="input" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Repita a senha" autoComplete="new-password" />
           </div>
         )}
-        {error && <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600">{error}</p>}
+        {error && <p role="alert" className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:text-rose-400">{error}</p>}
         <button type="submit" className="btn-primary w-full" disabled={pending || !email || !password}>
           {pending ? <Loader2 size={16} className="animate-spin" /> : isLogin ? <LogIn size={16} /> : <UserPlus size={16} />}
           {pending ? "Aguarde..." : isLogin ? "Entrar" : "Criar conta"}
@@ -78,12 +78,12 @@ export default function AuthForm({ mode }: { mode: "login" | "cadastro" }) {
           {isLogin ? (
             <>
               Ainda não tem conta?{" "}
-              <Link href="/cadastro" className="font-semibold text-emerald-600">Criar conta</Link>
+              <Link href="/cadastro" className="font-semibold text-emerald-600 dark:text-emerald-400">Criar conta</Link>
             </>
           ) : (
             <>
               Já tem conta?{" "}
-              <Link href="/login" className="font-semibold text-emerald-600">Entrar</Link>
+              <Link href="/login" className="font-semibold text-emerald-600 dark:text-emerald-400">Entrar</Link>
             </>
           )}
         </p>

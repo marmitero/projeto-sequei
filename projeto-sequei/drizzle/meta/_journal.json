@@ -15,6 +15,13 @@
       "when": 1792859363133,
       "tag": "0001_perpetual_shadowcat",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792937570146,
+      "tag": "0002_charming_grim_reaper",
+      "breakpoints": true
     }
   ]
 }

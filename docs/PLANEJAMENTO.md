@@ -78,11 +78,15 @@ Corrigir os 8 erros de lint; env-driven config + build sem banco; renomear packa
 - **Critério:** 7 dias consecutivos de uso sem precisar de item manual; ≥30% dos registros via favoritos/repetição.
 > **Status:** tudo implementado — `custom_foods`/`favorites` (migração 0001), abas Meus/Favoritos/Código no modal de alimentos, "Repetir de ontem" por refeição, `/compras` com checklist persistente, seção de progressão em Treinos (gráfico + sugestão + "Fiz isso"), relatório semanal + tendências em Métricas. Barcode testado no caminho de degradação (sandbox sem acesso à API externa; a integração real usa o mesmo mapper). 90/90 testes (48 unit + 42 e2e) — ver [TESTES.md §12](./TESTES.md). Pendências da Fase 2: instrumentação do critério ≥30% (derivável do banco) e envio do relatório por push/e-mail (movido para Fase 3 junto de notificações).
 
-### Fase 3 — Engajamento (1–2 meses)
+### Fase 3 — Engajamento (1–2 meses) ✅ **concluída em 2026-10-25**
 - **PWA** + notificações (água no cronograma que já existe, treino do dia, pesagem) usando `wakeTime`/`sleepTime`.
 - Gamificação (streaks, marcos), fotos de progresso + comparação, modo escuro.
 - Integração Google Fit/Apple Health (peso, sono, treinos).
 - **Critério:** retenção D30; streak médio ≥ 5 dias.
+
+> **Status:** tudo implementado — PWA (`manifest.webmanifest` + `sw.js` + ícone; cache de assets imutáveis e fallback offline de páginas), lembretes pelo navegador (Notification API agendada pela agenda `src/lib/reminders.ts` derivada de `wakeTime`/`sleepTime`: água distribuída no dia, treino no período preferido, pesagem semanal; toggles no shell), gamificação (streaks diário/água/treino + 16 marcos derivados dos registros, painel no dashboard), fotos de progresso (tabela `progress_photos` — migração `0002` — upload/lista/exclusão via `/api/photos`, galeria com comparação de 2 fotos em `/metricas`), import de saúde offline (Apple Health `export.xml` e CSV de peso do Google Fit/planilhas via `/api/health-import`; peso, % gordura e sono entram nas métricas por data) e modo escuro completo (script anti-FOUC + toggle persistido em `fitvida-theme`, com fallback para o esquema do sistema). 106/106 testes (55 unit + 51 e2e) — ver [TESTES.md §14](./TESTES.md).
+>
+> **Limitações honestas (futuro):** notificações só funcionam com o app aberto (Web Push/VAPID com service worker exige servidor de push — fora do escopo); integração Google Fit/Apple Health é por arquivo (OAuth das APIs exige credenciais/configuração do usuário); o critério retenção D30 e o streak médio ≥ 5 dias são métricas de produto — deriváveis dos dados (`daily streaks` em `src/lib/gamification.ts`), mas não mensuráveis no ambiente de teste. Envio do relatório semanal por push/e-mail permanece pendente (mencionado na Fase 2).
 
 ### Fase 4 — Escala (contínuo)
 - Planos compartilhados (nutricionista ↔ aluno), família; i18n; receitas da comunidade; ajuste de metas por IA com base na aderência real; apps nativos se houver tração.

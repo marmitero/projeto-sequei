@@ -11,7 +11,7 @@ type SortKey = "name" | "kcal" | "p" | "c" | "f" | "fib" | "dens";
 function SortHead({ k, sort, onSort, children }: { k: SortKey; sort: SortKey; onSort: (k: SortKey) => void; children: ReactNode }) {
   return (
     <th className="px-2 py-3 text-right first:text-left">
-      <button onClick={() => onSort(k)} className={`inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide ${sort === k ? "text-emerald-700" : "text-slate-500"}`}>
+      <button onClick={() => onSort(k)} className={`inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide ${sort === k ? "text-emerald-700 dark:text-emerald-300" : "text-slate-500"}`}>
         {children} <ArrowUpDown size={12} />
       </button>
     </th>
@@ -20,11 +20,11 @@ function SortHead({ k, sort, onSort, children }: { k: SortKey; sort: SortKey; on
 
 function badges(f: Food) {
   const b: { l: string; c: string }[] = [];
-  if (f.kcal > 0 && (f.p * 4) / f.kcal >= 0.4 && f.p >= 8) b.push({ l: "Rico em proteína", c: "bg-rose-50 text-rose-700" });
-  if (f.c - f.fib <= 5 && f.kcal > 5) b.push({ l: "Low-carb", c: "bg-emerald-50 text-emerald-700" });
+  if (f.kcal > 0 && (f.p * 4) / f.kcal >= 0.4 && f.p >= 8) b.push({ l: "Rico em proteína", c: "bg-rose-50 text-rose-700 dark:text-rose-300" });
+  if (f.c - f.fib <= 5 && f.kcal > 5) b.push({ l: "Low-carb", c: "bg-emerald-50 text-emerald-700 dark:text-emerald-300" });
   if (f.fib >= 3) b.push({ l: "Fonte de fibras", c: "bg-lime-50 text-lime-700" });
   if (f.gi) b.push({ l: `IG ${f.gi}`, c: f.gi === "alto" ? "bg-orange-50 text-orange-700" : "bg-slate-100 text-slate-600" });
-  if (f.sodium) b.push({ l: "Sódio alto", c: "bg-amber-50 text-amber-700" });
+  if (f.sodium) b.push({ l: "Sódio alto", c: "bg-amber-50 text-amber-700 dark:text-amber-300" });
   return b;
 }
 
@@ -111,7 +111,7 @@ export default function FoodTable({ profile }: { profile: Profile }) {
         <div className="card p-4 sm:p-5">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="flex items-center gap-2 font-bold">
-              <GitCompare size={18} className="text-emerald-600" /> Comparando ({grams} g)
+              <GitCompare size={18} className="text-emerald-600 dark:text-emerald-400" /> Comparando ({grams} g)
             </h3>
             <button className="text-sm text-slate-500" onClick={() => setCompare([])}>
               Limpar
@@ -131,12 +131,12 @@ export default function FoodTable({ profile }: { profile: Profile }) {
                   </div>
                   <div className="mt-2 text-2xl font-bold">{m.kcal} kcal</div>
                   <div className="mt-1 h-1.5 rounded-full bg-slate-100">
-                    <div className="h-1.5 rounded-full bg-slate-800" style={{ width: `${(m.kcal / max) * 100}%` }} />
+                    <div className="h-1.5 rounded-full bg-[#0f172a]" style={{ width: `${(m.kcal / max) * 100}%` }} />
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-1 text-xs">
-                    <span className="text-rose-600">Proteína {fmt(m.protein, 1)} g</span>
-                    <span className="text-amber-600">Carbo {fmt(m.carbs, 1)} g</span>
-                    <span className="text-sky-600">Gordura {fmt(m.fat, 1)} g</span>
+                    <span className="text-rose-600 dark:text-rose-400">Proteína {fmt(m.protein, 1)} g</span>
+                    <span className="text-amber-600 dark:text-amber-400">Carbo {fmt(m.carbs, 1)} g</span>
+                    <span className="text-sky-600 dark:text-sky-400">Gordura {fmt(m.fat, 1)} g</span>
                     <span className="text-lime-700">Fibras {fmt(m.fiber, 1)} g</span>
                   </div>
                 </div>
@@ -150,7 +150,7 @@ export default function FoodTable({ profile }: { profile: Profile }) {
       <div className="card hidden overflow-hidden md:block">
         <div className="max-h-[70vh] overflow-auto">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 z-10 bg-white/95 backdrop-blur">
+            <thead className="sticky top-0 z-10 bg-white/95 dark:bg-slate-100/95 backdrop-blur">
               <tr className="border-b border-slate-100">
                 <SortHead k="name" sort={sort} onSort={toggleSort}>Alimento</SortHead>
                 <SortHead k="kcal" sort={sort} onSort={toggleSort}>Kcal</SortHead>
@@ -180,9 +180,9 @@ export default function FoodTable({ profile }: { profile: Profile }) {
                       </div>
                     </td>
                     <td className="px-2 text-right font-semibold tabular-nums">{m.kcal}</td>
-                    <td className="px-2 text-right tabular-nums text-rose-600">{fmt(m.protein, 1)}</td>
-                    <td className="px-2 text-right tabular-nums text-amber-600">{fmt(m.carbs, 1)}</td>
-                    <td className="px-2 text-right tabular-nums text-sky-600">{fmt(m.fat, 1)}</td>
+                    <td className="px-2 text-right tabular-nums text-rose-600 dark:text-rose-400">{fmt(m.protein, 1)}</td>
+                    <td className="px-2 text-right tabular-nums text-amber-600 dark:text-amber-400">{fmt(m.carbs, 1)}</td>
+                    <td className="px-2 text-right tabular-nums text-sky-600 dark:text-sky-400">{fmt(m.fat, 1)}</td>
                     <td className="px-2 text-right tabular-nums text-lime-700">{fmt(m.fiber, 1)}</td>
                     <td className="px-2 text-right tabular-nums text-slate-500">{f.kcal ? fmt((f.p / f.kcal) * 100, 1) : "—"}</td>
                     <td className="px-2 text-center">

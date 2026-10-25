@@ -59,7 +59,7 @@ export default function RecipeBrowser({ profile, today, initial, remaining }: { 
         </div>
       </div>
 
-      <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+      <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:text-emerald-300">
         <Sparkles size={16} className="shrink-0" />
         Hoje ainda restam {fmt(Math.max(remaining.kcal, 0))} kcal, {fmt(Math.max(remaining.protein, 0))} g de proteína e {fmt(Math.max(remaining.carbs, 0))} g de carbo. “Melhor para hoje” usa esses números.
       </div>
@@ -69,12 +69,12 @@ export default function RecipeBrowser({ profile, today, initial, remaining }: { 
           <button key={r.key} onClick={() => setOpen(r)} className="card group overflow-hidden text-left transition hover:-translate-y-0.5 hover:shadow-xl">
             <div className={`relative flex h-36 items-center justify-center bg-gradient-to-br ${r.gradient}`}>
               <span className="text-7xl drop-shadow-lg transition group-hover:scale-110">{r.emoji}</span>
-              <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-bold text-slate-700">{RECIPE_CATEGORIES[r.category]}</span>
+              <span className="absolute left-3 top-3 rounded-full bg-white/90 dark:bg-slate-100/90 px-2.5 py-1 text-[11px] font-bold text-slate-700">{RECIPE_CATEGORIES[r.category]}</span>
               {sort === "fit" && i < 3 && comp.ok && <span className="absolute right-3 top-3 rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white">★ Ideal hoje</span>}
-              <span className="absolute bottom-3 right-3 rounded-full bg-slate-900/70 px-2.5 py-1 text-[11px] font-bold text-white">{fmt(n.netCarbs, 1)} g carbo líq.</span>
+              <span className="absolute bottom-3 right-3 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-bold text-white">{fmt(n.netCarbs, 1)} g carbo líq.</span>
             </div>
             <div className="p-4">
-              <div className="font-bold group-hover:text-emerald-700">{r.name}</div>
+              <div className="font-bold group-hover:text-emerald-700 dark:text-emerald-300">{r.name}</div>
               <p className="mt-1 line-clamp-2 text-sm text-slate-500">{r.description}</p>
               <div className="mt-3">
                 <MacroPills kcal={n.kcal} p={n.protein} c={n.carbs} f={n.fat} />
@@ -89,7 +89,7 @@ export default function RecipeBrowser({ profile, today, initial, remaining }: { 
                 <span>{r.difficulty}</span>
               </div>
               {!comp.ok && (
-                <div className="mt-2 flex items-center gap-1 text-xs font-medium text-amber-600">
+                <div className="mt-2 flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
                   <AlertTriangle size={13} /> {comp.reasons.join(" · ")}
                 </div>
               )}
@@ -116,18 +116,18 @@ function RecipeModal({ r, profile, today, onClose }: { r: Recipe; profile: Profi
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl bg-white animate-fade-up sm:rounded-3xl">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl bg-white dark:bg-slate-100 animate-fade-up sm:rounded-3xl">
         <div className={`relative flex h-40 shrink-0 items-center justify-center bg-gradient-to-br ${r.gradient} sm:h-48`}>
           <span className="text-8xl drop-shadow-xl">{r.emoji}</span>
-          <button onClick={onClose} className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-slate-700" aria-label="Fechar">
+          <button onClick={onClose} className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 dark:bg-slate-100/90 text-slate-700" aria-label="Fechar">
             <X size={18} />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-5 sm:p-7">
           <div className="flex flex-wrap gap-1.5">
             {r.tags.map((t) => (
-              <span key={t} className="flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+              <span key={t} className="flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
                 <Leaf size={11} /> {t}
               </span>
             ))}
@@ -140,18 +140,18 @@ function RecipeModal({ r, profile, today, onClose }: { r: Recipe; profile: Profi
             <span>📊 {r.difficulty}</span>
           </div>
           {!comp.ok && (
-            <div className="mt-3 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <div className="mt-3 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
               <AlertTriangle size={16} /> Atenção: {comp.reasons.join(" · ")}
             </div>
           )}
 
           <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-6">
             {[
-              ["Kcal", fmt(n.kcal), "bg-slate-900 text-white"],
-              ["Proteína", `${fmt(n.protein, 1)} g`, "bg-rose-50 text-rose-700"],
-              ["Carbo", `${fmt(n.carbs, 1)} g`, "bg-amber-50 text-amber-700"],
+              ["Kcal", fmt(n.kcal), "bg-[#0f172a] text-white"],
+              ["Proteína", `${fmt(n.protein, 1)} g`, "bg-rose-50 text-rose-700 dark:text-rose-300"],
+              ["Carbo", `${fmt(n.carbs, 1)} g`, "bg-amber-50 text-amber-700 dark:text-amber-300"],
               ["Carbo líq.", `${fmt(n.netCarbs, 1)} g`, "bg-orange-50 text-orange-700"],
-              ["Gordura", `${fmt(n.fat, 1)} g`, "bg-sky-50 text-sky-700"],
+              ["Gordura", `${fmt(n.fat, 1)} g`, "bg-sky-50 text-sky-700 dark:text-sky-300"],
               ["Fibras", `${fmt(n.fiber, 1)} g`, "bg-lime-50 text-lime-700"],
             ].map(([l, v, c]) => (
               <div key={l} className={`rounded-2xl p-2.5 text-center ${c}`}>

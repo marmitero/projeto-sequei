@@ -12,7 +12,7 @@ export default async function OnboardingPage() {
   return (
     <main className="min-h-screen px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto mb-4 flex max-w-3xl items-center justify-end">
-        <Link href="/login" className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-600 hover:text-emerald-700">
+        <Link href="/login" className="inline-flex items-center gap-1.5 text-sm font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:text-emerald-300">
           <LogIn size={16} /> Já tem conta? Entrar
         </Link>
       </div>

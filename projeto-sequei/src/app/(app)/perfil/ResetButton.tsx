@@ -10,7 +10,7 @@ export default function ResetButton() {
   const router = useRouter();
   return (
     <button
-      className="btn-outline !text-rose-600"
+      className="btn-outline !text-rose-600 dark:text-rose-400"
       disabled={pending}
       onClick={() => {
         if (!confirm("Apagar seu perfil e todo o histórico? Essa ação não pode ser desfeita.")) return;

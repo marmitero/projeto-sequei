@@ -146,3 +146,31 @@ Regras do servidor (`addFoodEntries`): lote de até 30 itens, datas validadas, g
 
 ### Critério de sucesso (Fase 2)
 - 7 dias consecutivos de uso sem registro manual; ≥30% dos registros via favoritos/repetição. As métricas de uso por fonte ainda não são instrumentadas (a base de dados já permite derivar: entradas com `foodKey`/`recipeKey` repetidas vs. manuais).
+
+## 11. Fase 3 — Engajamento
+
+### 11.1 Modo escuro
+- Toggle no topo (celular) e no fim da barra lateral (desktop); persiste em `localStorage` (`fitvida-theme`), com fallback para a preferência do sistema. Script inline no `<html>` aplica o tema antes da primeira pintura (sem "piscada").
+- Paleta: Tailwind v4 com remapeamento das variáveis em `.dark` (escala `slate` invertida; `-50/-100` de emerald/amber/rose/sky/orange escurecidos); textos `text-white` preservados para contraste em botões coloridos.
+
+### 11.2 Lembretes (notificações do navegador)
+- Botão de sino (AppShell) ativa notificações via Notification API. Enquanto o app estiver aberto, um agendador dispara:
+  - **Água**: copos de 250 ml distribuídos entre `wakeTime + 30min` e `sleepTime − 60min` (3–10 lembretes conforme a meta);
+  - **Treino**: 1 lembrete no período preferido (`trainingTime`: manhã = acordar + 1h; tarde = 13h; noite = 19h); seg–sex quando `trainingDays ≥ 3`;
+  - **Pesagem**: 1x/semana (segunda, por padrão) às `wakeTime + 45min`.
+- Estado em `fitvida-reminders`; cada disparo tem "chave do dia" para não repetir.
+
+### 11.3 Gamificação
+- Painel **"Sequências e marcos"** no dashboard: streaks de alimentação (com recorde), água e treino (dias consecutivos, tolerando "hoje ainda sem registro"), + 16 marcos (Constância 🍽️ ×4, Hidratação 💧 ×3, Força do hábito 💪 ×3, Balança amiga ⚖️ ×3, Semana completa 🔥 ×3) com progresso.
+- Derivado dos registros existentes (sem tabelas novas) — `src/lib/gamification.ts` (função pura).
+
+### 11.4 Fotos de progresso
+- Em `/metricas`: upload (JPEG/PNG/WebP até 2,5 MB, data + anotação), galeria e **comparação lado a lado** (selecione 2 fotos) + exclusão.
+- Tabela `progress_photos` (migração `0002`); bytes no banco (app pessoal). API: `POST/GET /api/photos`, `GET/DELETE /api/photos/[id]`.
+
+### 11.5 Import de dados de saúde (Apple Health / Google Fit)
+- Em `/perfil` → **"Importar dados de saúde"**: envia `export.xml` do Apple Health (Pessoal → Exportar) ou CSV de peso (Takeout do Google Fit / planilha com colunas de data + peso).
+- Extrai **peso (kg/lb)**, **% de gordura** e **horas de sono** por data e grava nas métricas do dia (`/api/health-import`, até 8 MB). Aceita decimal vírgula e separador `;` (export BR). Sem OAuth — importação offline por arquivo.
+
+### 11.6 PWA
+- `manifest.webmanifest` (standalone, pt-BR, ícone `/icon.png` 512), `sw.js` com cache de assets imutáveis (`/_next/static/`, ícone, manifest) e fallback offline para navegações. Registro automático no layout raiz.

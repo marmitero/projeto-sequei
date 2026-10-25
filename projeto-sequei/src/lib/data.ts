@@ -1,6 +1,6 @@
 import "server-only";
 import { redirect } from "next/navigation";
-import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { foodLogs, waterLogs, workoutLogs, metrics } from "@/db/schema";
 import { getUser, toProfile } from "./session";
@@ -40,4 +40,22 @@ export function sumMacros(rows: { kcal: number; protein: number; carbs: number; 
     (a, r) => ({ kcal: a.kcal + r.kcal, protein: a.protein + r.protein, carbs: a.carbs + r.carbs, fat: a.fat + r.fat, fiber: a.fiber + r.fiber }),
     { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
   );
+}
+
+/** Datas agregadas para streaks/marcos (gamificação). */
+export async function dailyCounts(userId: string, waterGoalMl: number) {
+  const [foods, waters, workouts, ms] = await Promise.all([
+    db.select({ date: foodLogs.date }).from(foodLogs).where(eq(foodLogs.userId, userId)).groupBy(foodLogs.date),
+    db.select({ date: waterLogs.date, total: sql<number>`sum(${waterLogs.ml})` }).from(waterLogs).where(eq(waterLogs.userId, userId)).groupBy(waterLogs.date),
+    db.select({ date: workoutLogs.date }).from(workoutLogs).where(eq(workoutLogs.userId, userId)).groupBy(workoutLogs.date),
+    db.select({ date: metrics.date }).from(metrics).where(eq(metrics.userId, userId)).groupBy(metrics.date),
+  ]);
+  return {
+    foodDays: foods.map((f) => f.date),
+    waterDays: waters.filter((w) => Number(w.total) >= waterGoalMl * 0.9).map((w) => w.date),
+    workoutDays: workouts.map((w) => w.date),
+    weighDays: ms.map((m) => m.date),
+    workouts: workouts.length,
+    waterGoalMl,
+  };
 }

@@ -173,8 +173,8 @@ export default function AddFoodModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
-      <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl animate-fade-up sm:rounded-3xl">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-white dark:bg-slate-100 shadow-2xl animate-fade-up sm:rounded-3xl">
         <div className="flex items-center gap-2 border-b border-slate-100 p-4">
           {sel ? (
             <button onClick={() => setSel(null)} className="btn-ghost !p-2" aria-label="Voltar">
@@ -197,7 +197,7 @@ export default function AddFoodModal({
         </div>
 
         {okMsg && (
-          <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+          <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">
             <Check size={16} /> {okMsg}
           </div>
         )}
@@ -221,7 +221,7 @@ export default function AddFoodModal({
                 </div>
                 <h3 className="text-xl font-bold">{sel.name}</h3>
                 {blockedReason(sel, profile) && (
-                  <div className="mt-2 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                  <div className="mt-2 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
                     <AlertTriangle size={16} /> {blockedReason(sel, profile)} — atenção ao consumir.
                   </div>
                 )}
@@ -260,7 +260,7 @@ export default function AddFoodModal({
                   </div>
                   {(
                     [
-                      ["Calorias", totals.kcal, after.kcal, targets.kcal, "kcal", "bg-slate-800"],
+                      ["Calorias", totals.kcal, after.kcal, targets.kcal, "kcal", "bg-[#0f172a]"],
                       ["Proteína", totals.protein, after.protein, targets.protein, "g", "bg-rose-500"],
                       ["Carboidrato", totals.carbs, after.carbs, targets.carbs, "g", "bg-amber-400"],
                       ["Gordura", totals.fat, after.fat, targets.fat, "g", "bg-sky-500"],
@@ -269,7 +269,7 @@ export default function AddFoodModal({
                     <div key={l}>
                       <div className="mb-1 flex justify-between text-xs">
                         <span className="text-slate-600">{l}</span>
-                        <span className={`tabular-nums ${aft > tgt * 1.05 ? "font-bold text-rose-600" : "text-slate-500"}`}>
+                        <span className={`tabular-nums ${aft > tgt * 1.05 ? "font-bold text-rose-600 dark:text-rose-400" : "text-slate-500"}`}>
                           {fmt(aft)} / {tgt} {u}
                         </span>
                       </div>
@@ -311,9 +311,9 @@ export default function AddFoodModal({
                             <MacroPills small kcal={f.kcal} p={f.p} c={f.c} f={f.f} />
                             <span className="text-[11px] text-slate-400">/100 g</span>
                           </div>
-                          {br && <div className="mt-1 text-[11px] font-medium text-amber-600">⚠ {br}</div>}
+                          {br && <div className="mt-1 text-[11px] font-medium text-amber-600 dark:text-amber-400">⚠ {br}</div>}
                         </div>
-                        <Plus size={18} className="text-emerald-600" />
+                        <Plus size={18} className="text-emerald-600 dark:text-emerald-400" />
                       </button>
                       <FavButton kind="food" id={f.key} active={favSet.has(`food:${f.key}`)} onToggle={toggleFav} />
                     </div>
@@ -333,7 +333,7 @@ export default function AddFoodModal({
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-semibold">{r.name}</div>
                       <MacroPills small kcal={n.kcal} p={n.protein} c={n.carbs} f={n.fat} />
-                      {!comp.ok && <div className="mt-0.5 text-[11px] text-amber-600">⚠ {comp.reasons[0]}</div>}
+                      {!comp.ok && <div className="mt-0.5 text-[11px] text-amber-600 dark:text-amber-400">⚠ {comp.reasons[0]}</div>}
                     </div>
                     <FavButton kind="recipe" id={r.key} active={favSet.has(`recipe:${r.key}`)} onToggle={toggleFav} />
                     <button
@@ -469,7 +469,7 @@ export default function AddFoodModal({
                 </button>
               </div>
               {bcError && (
-                <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                <div className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:text-amber-200">
                   <AlertTriangle size={16} /> {bcError}
                 </div>
               )}

@@ -65,7 +65,7 @@ function Option({ on, onClick, title, desc, emoji }: { on: boolean; onClick: () 
     <button
       type="button"
       onClick={onClick}
-      className={`relative flex w-full items-start gap-3 rounded-2xl border-2 p-4 text-left transition ${on ? "border-emerald-500 bg-emerald-50/60 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"}`}
+      className={`relative flex w-full items-start gap-3 rounded-2xl border-2 p-4 text-left transition ${on ? "border-emerald-500 bg-emerald-50/60 shadow-sm" : "border-slate-200 bg-white dark:bg-slate-100 hover:border-slate-300"}`}
     >
       {emoji && <span className="text-2xl leading-none">{emoji}</span>}
       <span className="min-w-0">
@@ -153,7 +153,7 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
         {STEPS.map((s, i) => (
           <button key={s} type="button" onClick={() => i < step && setStep(i)} className="flex-1">
             <div className={`h-1.5 rounded-full transition ${i <= step ? "bg-emerald-500" : "bg-slate-200"}`} />
-            <div className={`mt-1.5 hidden text-left text-[11px] font-medium sm:block ${i === step ? "text-emerald-700" : "text-slate-400"}`}>{s}</div>
+            <div className={`mt-1.5 hidden text-left text-[11px] font-medium sm:block ${i === step ? "text-emerald-700 dark:text-emerald-300" : "text-slate-400"}`}>{s}</div>
           </button>
         ))}
       </div>
@@ -358,7 +358,7 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
               <Chips options={p.sex === "F" ? CONDITIONS : Object.fromEntries(Object.entries(CONDITIONS).filter(([k]) => k !== "gestante" && k !== "lactante"))} value={p.healthConditions} onChange={(v) => set("healthConditions", v)} />
             </div>
 
-            <div className="rounded-3xl bg-gradient-to-br from-slate-900 to-emerald-900 p-5 text-white">
+            <div className="rounded-3xl bg-gradient-to-br from-[#0f172a] to-[#064e3b] p-5 text-white">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-emerald-300">
                 <Sparkles size={16} /> Seu plano personalizado
               </div>
@@ -373,7 +373,7 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
                   ["Gasto total", `${targets.tdee} kcal`],
                   ["Previsão", weeks ? `~${weeks} semanas` : "Manutenção"],
                 ].map(([l, v]) => (
-                  <div key={l} className="rounded-2xl bg-white/10 p-3">
+                  <div key={l} className="rounded-2xl bg-white/10 dark:bg-slate-100/10 p-3">
                     <div className="text-[11px] uppercase tracking-wide text-emerald-200/80">{l}</div>
                     <div className="mt-0.5 text-lg font-bold">{v}</div>
                   </div>
@@ -388,14 +388,14 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
               )}
             </div>
 
-            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:text-amber-200">
               <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 h-4 w-4 accent-emerald-600" />
               <span>
                 <ShieldAlert size={16} className="mr-1 inline" />
                 Entendo que o FitVida oferece estimativas educativas e não substitui o acompanhamento de médico, nutricionista ou educador físico.
               </span>
             </label>
-            {error && <p className="text-sm text-rose-600">{error}</p>}
+            {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
           </div>
         )}
 

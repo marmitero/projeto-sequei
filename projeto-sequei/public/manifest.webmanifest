@@ -1,0 +1,26 @@
+{
+  "name": "FitVida — acompanhamento fitness",
+  "short_name": "FitVida",
+  "description": "Alimentação, treinos, hidratação, métricas e receitas low-carb condicionados ao seu perfil.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f8fa",
+  "theme_color": "#059669",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
   return (
     <main className="grid min-h-screen place-items-center px-4">
       <div className="card w-full max-w-md p-8 text-center">
-        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-rose-50 text-rose-600">
+        <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-rose-50 text-rose-600 dark:text-rose-400">
           <AlertTriangle size={26} />
         </div>
         <h1 className="mt-4 text-xl font-bold">Algo deu errado</h1>

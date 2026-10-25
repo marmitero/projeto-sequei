@@ -10,7 +10,7 @@ function Delta({ cur, prev, unit, invert = false }: { cur: number; prev: number;
   const good = invert ? !up : up;
   const Icon = up ? ArrowUpRight : ArrowDownRight;
   return (
-    <span className={`inline-flex items-center gap-0.5 text-xs font-semibold ${good ? "text-emerald-600" : "text-rose-500"}`}>
+    <span className={`inline-flex items-center gap-0.5 text-xs font-semibold ${good ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"}`}>
       <Icon size={13} /> {Math.abs(d)}% {unit}
     </span>
   );
@@ -52,7 +52,7 @@ export default function WeeklySection({ report }: { report: WeeklyReport }) {
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
-        <CalendarRange size={18} className="text-emerald-600" />
+        <CalendarRange size={18} className="text-emerald-600 dark:text-emerald-400" />
         <h2 className="text-xl font-bold">Relatório semanal</h2>
         <span className="ml-auto text-xs text-slate-400">
           {formatDateBR(c.from, { day: "2-digit", month: "short" })} – {formatDateBR(c.to, { day: "2-digit", month: "short" })}

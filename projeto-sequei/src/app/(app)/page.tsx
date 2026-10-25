@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Flame, Droplets, Dumbbell, Scale, ChevronRight, Lightbulb, Utensils, ChefHat, Target, Footprints } from "lucide-react";
-import { getContext, foodsOn, waterBetween, workoutsBetween, allMetrics, sumMacros } from "@/lib/data";
+import { getContext, foodsOn, waterBetween, workoutsBetween, allMetrics, sumMacros, dailyCounts } from "@/lib/data";
+import { summarize } from "@/lib/gamification";
+import GamificationPanel from "@/components/GamificationPanel";
 import { addDays, GOALS, personalTips, weekdayOf, bmi, bmiClass, formatDateBR, weeksToGoal } from "@/lib/calc";
 import { generateWorkoutPlan, WEEKDAYS } from "@/lib/exercises";
 import { RECIPES, recipeNutrition, recipeCompatibility } from "@/lib/recipes";
@@ -16,6 +18,8 @@ export default async function Dashboard() {
     allMetrics(user.id),
   ]);
 
+  const counts = await dailyCounts(user.id, targets.water);
+  const game = summarize(counts, today);
   const eaten = sumMacros(foods);
   const waterMl = water.reduce((a, w) => a + w.ml, 0);
   const todayWorkouts = workouts.filter((w) => w.date === today);
@@ -53,7 +57,7 @@ export default async function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium text-emerald-600">{formatDateBR(today, { weekday: "long", day: "numeric", month: "long" })}</p>
+        <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">{formatDateBR(today, { weekday: "long", day: "numeric", month: "long" })}</p>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
           {greet}, {user.name.split(" ")[0]} 👋
         </h1>
@@ -80,8 +84,8 @@ export default async function Dashboard() {
                   <div className="font-bold tabular-nums">{fmt(targets.kcal)}</div>
                 </div>
                 <div className="rounded-2xl bg-emerald-50 p-2.5">
-                  <div className="text-[11px] uppercase text-emerald-700">Consumido</div>
-                  <div className="font-bold tabular-nums text-emerald-700">{fmt(eaten.kcal)}</div>
+                  <div className="text-[11px] uppercase text-emerald-700 dark:text-emerald-300">Consumido</div>
+                  <div className="font-bold tabular-nums text-emerald-700 dark:text-emerald-300">{fmt(eaten.kcal)}</div>
                 </div>
                 <div className="rounded-2xl bg-orange-50 p-2.5">
                   <div className="text-[11px] uppercase text-orange-700">Treino</div>
@@ -139,12 +143,12 @@ export default async function Dashboard() {
             <h2 className="flex items-center gap-2 font-bold">
               <Dumbbell size={18} className="text-orange-500" /> {session ? "Treino de hoje" : "Hoje é dia de descanso"}
             </h2>
-            <Link href="/exercicios" className="text-sm font-semibold text-emerald-600">
+            <Link href="/exercicios" className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
               Ver plano
             </Link>
           </div>
           {todayWorkouts.length > 0 && (
-            <div className="mb-3 rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-800">
+            <div className="mb-3 rounded-2xl bg-emerald-50 p-3 text-sm text-emerald-800 dark:text-emerald-300">
               ✅ Você já registrou {todayWorkouts.map((w) => w.title).join(", ")} hoje ({fmt(burned)} kcal).
             </div>
           )}
@@ -180,7 +184,7 @@ export default async function Dashboard() {
             <h2 className="flex items-center gap-2 font-bold">
               <Scale size={18} className="text-violet-500" /> Evolução do peso
             </h2>
-            <Link href="/metricas" className="text-sm font-semibold text-emerald-600">
+            <Link href="/metricas" className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
               Registrar
             </Link>
           </div>
@@ -199,10 +203,10 @@ export default async function Dashboard() {
           <Link href={`/receitas?r=${recipe.r.key}`} className="card group overflow-hidden lg:col-span-2">
             <div className={`flex h-28 items-center justify-center bg-gradient-to-br ${recipe.r.gradient} text-6xl`}>{recipe.r.emoji}</div>
             <div className="p-5">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-600">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
                 <ChefHat size={14} /> Receita low-carb pra você hoje
               </div>
-              <div className="mt-1 font-bold group-hover:text-emerald-700">{recipe.r.name}</div>
+              <div className="mt-1 font-bold group-hover:text-emerald-700 dark:text-emerald-300">{recipe.r.name}</div>
               <div className="mt-2">
                 <MacroPills kcal={recipe.n.kcal} p={recipe.n.protein} c={recipe.n.carbs} f={recipe.n.fat} />
               </div>
@@ -224,6 +228,8 @@ export default async function Dashboard() {
           </ul>
         </div>
       </div>
+      <GamificationPanel streaks={game.streaks} badges={game.badges} earned={game.earned} />
+
     </div>
   );
 }
