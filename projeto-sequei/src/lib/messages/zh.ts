@@ -1,5 +1,6 @@
 // Dicionário ZH (mandarim). Chaves em `namespace.chave`. Interpolação: {{variavel}}.
 const zh: Record<string, string> = {
+  "wp.effort": "主观强度",
   "wp.riskNote": "针对 {{list}} 的风险动作已排除。如感到疼痛请停止。",
   "game.unit.mix": "天",
   "game.unit.weigh": "次称重",

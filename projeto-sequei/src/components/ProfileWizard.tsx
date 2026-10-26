@@ -274,11 +274,11 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="label">{t("wiz.daysPerWeek", { n: p.trainingDays })}</label>
+                <label className="label">{t("wiz.daysPerWeek")}: {p.trainingDays}</label>
                 <input type="range" min={1} max={7} value={p.trainingDays} onChange={(e) => set("trainingDays", Number(e.target.value))} className="w-full accent-emerald-600" />
               </div>
               <div>
-                <label className="label">{t("wiz.minutesPerWorkout", { n: p.sessionMinutes })}</label>
+                <label className="label">{t("wiz.minutesPerWorkout")}: {p.sessionMinutes}</label>
                 <input type="range" min={20} max={120} step={5} value={p.sessionMinutes} onChange={(e) => set("sessionMinutes", Number(e.target.value))} className="w-full accent-emerald-600" />
               </div>
             </div>
@@ -331,7 +331,7 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
               </div>
             </div>
             <div>
-              <label className="label">{t("wiz.meals", { n: p.mealsPerDay })}</label>
+              <label className="label">{t("wiz.meals")}: {p.mealsPerDay}</label>
               <input type="range" min={3} max={6} value={p.mealsPerDay} onChange={(e) => set("mealsPerDay", Number(e.target.value))} className="w-full accent-emerald-600" />
             </div>
             <div>

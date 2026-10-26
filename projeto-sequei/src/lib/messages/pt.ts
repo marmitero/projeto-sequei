@@ -1,6 +1,7 @@
 // Dicionário PT-BR (fonte da verdade). Chaves em `namespace.chave`.
 // Interpolação: {{variavel}}. Paridade com outros idiomas coberta por teste.
 const pt: Record<string, string> = {
+  "wp.effort": "Esforço percebido",
   "wp.riskNote": "Exercícios de risco para {{list}} foram excluídos. Pare se sentir dor.",
   "game.unit.mix": "dias",
   "game.unit.weigh": "pesagens",

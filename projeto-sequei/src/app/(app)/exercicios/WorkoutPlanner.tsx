@@ -257,7 +257,7 @@ function LogModal({ profile, today, session, onClose }: { profile: Profile; toda
             </select>
           </div>
           <div>
-            <label className="label">Esforço percebido: {effort}/10</label>
+            <label className="label">{t("wp.effort")}: {effort}/10</label>
             <input type="range" min={1} max={10} value={effort} onChange={(e) => setEffort(Number(e.target.value))} className="w-full accent-emerald-600" />
           </div>
           {ex.length > 0 && (

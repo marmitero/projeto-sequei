@@ -1,5 +1,6 @@
 // Dicionário FR. Chaves em `namespace.chave`. Interpolação: {{variavel}}.
 const fr: Record<string, string> = {
+  "wp.effort": "Effort perçu",
   "wp.riskNote": "Les exercices à risque pour {{list}} ont été exclus. Arrêtez en cas de douleur.",
   "game.unit.mix": "jours",
   "game.unit.weigh": "pesées",
