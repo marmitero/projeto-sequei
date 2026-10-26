@@ -200,7 +200,7 @@ Interface traduzida para **português (padrão), inglês, francês, espanhol e c
 
 - **Infra**: `src/lib/i18n-core.ts` (puro: `DICTS`, `translate`, `tFor`, `isLocale`, `LOCALES`), `src/lib/i18n.tsx` (client: `I18nProvider`, `useT`, `useLocale`), `src/lib/i18n-server.ts` (`getT`, `getLocale` para componentes de servidor e server actions). Dicionários em `src/lib/messages/{pt,en,fr,es,zh}.ts`.
 - **Chaves** em `namespace.chave` (fonte da verdade: `pt.ts`, 637 chaves); interpolação `{{var}}`; chave desconhecida cai no próprio texto da chave; locale desconhecido cai em pt.
-- **Seleção de idioma**: cookie `fitvida-lang` (client-side, `LanguageToggle` no cabeçalho); padrão pt-BR preserva a UI e os testes existentes.
+- **Seleção de idioma**: cookie `fitvida-lang` (client-side, `LanguageToggle` no cabeçalho e na primeira tela do cadastro `/onboarding`, junto com o `ThemeToggle`); padrão pt-BR preserva a UI e os testes existentes.
 - **Domínio traduz via chaves**: `GOALS`/`ACTIVITY_FACTORS`/`bmiClass` → `goal.*`/`act.*`/`bmi.*`; `targets.notes`/`personalTips` → `NoteMsg[] {key, vars}` (`note.*`/`tip.*`); `EQUIPMENT`/`INJURY`/`CARDIO`/`WEEKDAYS`/`MEALS` → `equip.*`/`inj.*`/`cardio.*`/`day.*`/`meal.*`; recomendações do coach → `coach.*` com `vars`; avisos de alimentos → `add.warn*`. `formatDateBR(date, opts, locale)` em `calc.ts` (`LOCALE_TAGS`).
 - **Limitações (decisão)**: conteúdo de catálogo e planos permanece **PT-BR** (nomes de alimentos/receitas/exercícios; títulos/foco/dicas de sessões em `exerciences.ts`/SPLITS); numérico `fmt` segue pt-BR; `lang` do `<html>` fixo em pt-BR.
 - **Testes**: `tests/unit/i18n.test.ts` (paridade exata de chaves, mesmas `{{vars}}`, sem valores vazios, `translate`); `tests/e2e/i18n.test.ts` (SSR nos 5 idiomas via cookie; dashboard traduz). Bateria: 70 unit + 60 e2e = 130/130.
@@ -214,3 +214,7 @@ Grupos com **contas reais vinculadas** (além do compartilhamento por link), tud
 - **UI** `/familia` (nav "Família"): criar grupo, entrar por código, tabela de membros com resumos, convites (gerar/copiar/revogar), sair/remover.
 - **Permissões**: só o dono convida/remove/revoga; dono não sai (precisa remover membros); convite de uso único; membro vê apenas **resumos** — registros detalhados seguem privados (links de compartilhamento continuam existindo para isso).
 - **Testes**: `tests/e2e/familia.test.ts` (3): criar+convite+código inválido+uso único+overview; permissões (membro não convida/remove, dono não sai, dono remove, membro sai). Bateria total: **70 unit + 63 e2e = 133/133**.
+
+## 15. Validação estilo usuário (2026-10-26)
+
+Relatório de validação da plataforma simulando uso real (cadastro → rotina → todas as telas), com bugs de interface corrigidos (vazamento de chaves de tradução em 11 telas, variáveis `{{ }}` não interpoladas, chaves de emblemas ausentes dos dicionários, textos fixos PT) e sugestões de sistema/UX (validação 400 em `foodKey` inválido, `lang` dinâmico, formato numérico por locale, toggles em `/login` e páginas públicas, dark mode em `/familia`, entre outras): **`docs/VALIDACAO-USUARIO.md`**.
