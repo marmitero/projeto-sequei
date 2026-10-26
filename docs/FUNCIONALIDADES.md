@@ -204,3 +204,13 @@ Interface traduzida para **português (padrão), inglês, francês, espanhol e c
 - **Domínio traduz via chaves**: `GOALS`/`ACTIVITY_FACTORS`/`bmiClass` → `goal.*`/`act.*`/`bmi.*`; `targets.notes`/`personalTips` → `NoteMsg[] {key, vars}` (`note.*`/`tip.*`); `EQUIPMENT`/`INJURY`/`CARDIO`/`WEEKDAYS`/`MEALS` → `equip.*`/`inj.*`/`cardio.*`/`day.*`/`meal.*`; recomendações do coach → `coach.*` com `vars`; avisos de alimentos → `add.warn*`. `formatDateBR(date, opts, locale)` em `calc.ts` (`LOCALE_TAGS`).
 - **Limitações (decisão)**: conteúdo de catálogo e planos permanece **PT-BR** (nomes de alimentos/receitas/exercícios; títulos/foco/dicas de sessões em `exerciences.ts`/SPLITS); numérico `fmt` segue pt-BR; `lang` do `<html>` fixo em pt-BR.
 - **Testes**: `tests/unit/i18n.test.ts` (paridade exata de chaves, mesmas `{{vars}}`, sem valores vazios, `translate`); `tests/e2e/i18n.test.ts` (SSR nos 5 idiomas via cookie; dashboard traduz). Bateria: 70 unit + 60 e2e = 130/130.
+
+## 14. Grupo de família com conta vinculada (2026-10-26, 2ª leva da Fase 4)
+
+Grupos com **contas reais vinculadas** (além do compartilhamento por link), tudo programático.
+
+- **Dados (migração `0004`)**: `families` (dono), `family_members` (1 grupo por usuário; papéis `owner`/`member`), `family_invites` (código hex 32, uso único, expira em 7 dias, revogável).
+- **Ações** (`actions.ts`): `createFamily`, `generateFamilyInvite`, `joinFamily(code)`, `leaveFamily`, `removeFamilyMember`, `revokeFamilyInvite`, `familyOverview` (resumos determinísticos por membro: objetivo, peso→meta, treinos 7 dias, média de água, última atividade).
+- **UI** `/familia` (nav "Família"): criar grupo, entrar por código, tabela de membros com resumos, convites (gerar/copiar/revogar), sair/remover.
+- **Permissões**: só o dono convida/remove/revoga; dono não sai (precisa remover membros); convite de uso único; membro vê apenas **resumos** — registros detalhados seguem privados (links de compartilhamento continuam existindo para isso).
+- **Testes**: `tests/e2e/familia.test.ts` (3): criar+convite+código inválido+uso único+overview; permissões (membro não convida/remove, dono não sai, dono remove, membro sai). Bateria total: **70 unit + 63 e2e = 133/133**.

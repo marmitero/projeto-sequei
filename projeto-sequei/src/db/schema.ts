@@ -293,3 +293,55 @@ export const planShares = pgTable(
 );
 
 export type PlanShare = typeof planShares.$inferSelect;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Grupo de família (contas vinculadas)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Grupo familiar. Dono criou; membros vinculam por convite com código. */
+export const families = pgTable("families", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  ownerId: uuid("owner_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/** Vínculo usuário ↔ família. */
+export const familyMembers = pgTable(
+  "family_members",
+  {
+    id: serial("id").primaryKey(),
+    familyId: integer("family_id")
+      .notNull()
+      .references(() => families.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role").notNull().default("member"), // owner | member
+    joinedAt: timestamp("joined_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("family_members_unique").on(t.familyId, t.userId), uniqueIndex("family_members_user_unique").on(t.userId)],
+);
+
+/** Convites por código (uso único; expira em 7 dias; revogável pelo dono). */
+export const familyInvites = pgTable("family_invites", {
+  id: serial("id").primaryKey(),
+  familyId: integer("family_id")
+    .notNull()
+    .references(() => families.id, { onDelete: "cascade" }),
+  code: text("code").notNull().unique(),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at").notNull(),
+  consumedBy: uuid("consumed_by").references(() => users.id, { onDelete: "set null" }),
+  consumedAt: timestamp("consumed_at"),
+  revokedAt: timestamp("revoked_at"),
+});
+
+export type Family = typeof families.$inferSelect;
+export type FamilyMember = typeof familyMembers.$inferSelect;
+export type FamilyInvite = typeof familyInvites.$inferSelect;

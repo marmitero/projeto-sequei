@@ -4,9 +4,9 @@ import { randomBytes } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { getT } from "@/lib/i18n-server";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { users, accounts, foodLogs, waterLogs, workoutLogs, metrics, customFoods, favorites, communityRecipes, communityRecipeLikes, planShares, type WorkoutExercise } from "@/db/schema";
+import { users, accounts, foodLogs, waterLogs, workoutLogs, metrics, customFoods, favorites, communityRecipes, communityRecipeLikes, planShares, families, familyMembers, familyInvites, type WorkoutExercise } from "@/db/schema";
 import { COOKIE, getUserId, getUser, getSessionAccount, startSession, endSession, authCookieOpts } from "@/lib/session";
 import type { Profile } from "@/lib/calc";
 import { FOOD_MAP, macrosFor } from "@/lib/foods";
@@ -720,5 +720,132 @@ export async function clearTargetOverrides(): Promise<{ ok: boolean }> {
   const userId = await requireUser();
   await db.update(users).set({ targetOverrides: null }).where(eq(users.id, userId));
   done();
+  return { ok: true };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Grupo de família (contas vinculadas)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function inviteCode(): string {
+  return randomBytes(16).toString("hex");
+}
+
+/** Visão da família: membros com resumo determinístico (metas, peso, treinos, água). */
+export async function familyOverview(): Promise<{
+  ok: boolean;
+  family: { id: number; name: string; ownerId: string } | null;
+  members: { userId: string; name: string; role: string; goal: string; weightKg: number; targetWeightKg: number; workouts7: number; waterAvgMl: number; lastActive: string | null }[];
+  invites: { id: number; code: string; expiresAt: string; used: boolean }[];
+}> {
+  const userId = await requireUser();
+  const membership = await db.select().from(familyMembers).where(eq(familyMembers.userId, userId)).limit(1);
+  if (!membership.length) return { ok: true, family: null, members: [], invites: [] };
+  const familyId = membership[0].familyId;
+  const fam = await db.select().from(families).where(eq(families.id, familyId)).limit(1);
+  const rows = await db
+    .select({ userId: familyMembers.userId, role: familyMembers.role, name: users.name, goal: users.goal, weightKg: users.weightKg, targetWeightKg: users.targetWeightKg })
+    .from(familyMembers)
+    .innerJoin(users, eq(users.id, familyMembers.userId))
+    .where(eq(familyMembers.familyId, familyId));
+  const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString().slice(0, 10);
+  const members = [];
+  for (const r of rows) {
+    const wl = await db.select().from(workoutLogs).where(and(eq(workoutLogs.userId, r.userId), gte(workoutLogs.date, weekAgo)));
+    const wlogs = await db.select().from(waterLogs).where(and(eq(waterLogs.userId, r.userId), gte(waterLogs.date, weekAgo)));
+    const byDay = new Map<string, number>();
+    for (const w of wlogs) byDay.set(w.date, (byDay.get(w.date) ?? 0) + w.ml);
+    const waterAvgMl = byDay.size ? Math.round([...byDay.values()].reduce((a, b) => a + b, 0) / byDay.size) : 0;
+    const last = await db.select().from(metrics).where(eq(metrics.userId, r.userId)).orderBy(desc(metrics.date)).limit(1);
+    members.push({
+      userId: r.userId,
+      name: r.name ?? "",
+      role: r.role,
+      goal: r.goal ?? "manter",
+      weightKg: r.weightKg ?? 0,
+      targetWeightKg: r.targetWeightKg ?? 0,
+      workouts7: wl.length,
+      waterAvgMl,
+      lastActive: last[0]?.date ?? null,
+    });
+  }
+  const invites = await db.select().from(familyInvites).where(eq(familyInvites.familyId, familyId)).orderBy(desc(familyInvites.createdAt));
+  return {
+    ok: true,
+    family: fam[0] ? { id: fam[0].id, name: fam[0].name, ownerId: fam[0].ownerId } : null,
+    members,
+    invites: invites.map((i) => ({ id: i.id, code: i.code, expiresAt: i.expiresAt.toISOString(), used: !!i.consumedAt })),
+  };
+}
+
+export async function createFamily(name: string): Promise<{ ok: boolean; error?: string; familyId?: number }> {
+  const userId = await requireUser();
+  const t = await getT();
+  const clean = (name ?? "").trim().slice(0, 60);
+  if (!clean) return { ok: false, error: t("err.invalidInput") };
+  const existing = await db.select().from(familyMembers).where(eq(familyMembers.userId, userId)).limit(1);
+  if (existing.length) return { ok: false, error: t("fam.alreadyIn") };
+  const r = await db.insert(families).values({ name: clean, ownerId: userId }).returning({ id: families.id });
+  await db.insert(familyMembers).values({ familyId: r[0].id, userId, role: "owner" });
+  return { ok: true, familyId: r[0].id };
+}
+
+export async function generateFamilyInvite(): Promise<{ ok: boolean; error?: string; code?: string }> {
+  const userId = await requireUser();
+  const t = await getT();
+  const membership = await db.select().from(familyMembers).where(eq(familyMembers.userId, userId)).limit(1);
+  if (!membership.length) return { ok: false, error: t("fam.noFamily") };
+  if (membership[0].role !== "owner") return { ok: false, error: t("fam.onlyOwnerInvite") };
+  const code = inviteCode();
+  await db.insert(familyInvites).values({
+    familyId: membership[0].familyId,
+    code,
+    createdBy: userId,
+    expiresAt: new Date(Date.now() + 7 * 86400_000),
+  });
+  return { ok: true, code };
+}
+
+export async function joinFamily(code: string): Promise<{ ok: boolean; error?: string }> {
+  const userId = await requireUser();
+  const t = await getT();
+  const clean = (code ?? "").trim().toLowerCase();
+  const inv = await db.select().from(familyInvites).where(eq(familyInvites.code, clean)).limit(1);
+  if (!inv.length || inv[0].revokedAt || inv[0].consumedAt || inv[0].expiresAt < new Date()) {
+    return { ok: false, error: t("fam.badInvite") };
+  }
+  const existing = await db.select().from(familyMembers).where(eq(familyMembers.userId, userId)).limit(1);
+  if (existing.length) return { ok: false, error: t("fam.alreadyIn") };
+  await db.insert(familyMembers).values({ familyId: inv[0].familyId, userId, role: "member" });
+  await db.update(familyInvites).set({ consumedBy: userId, consumedAt: new Date() }).where(eq(familyInvites.id, inv[0].id));
+  return { ok: true };
+}
+
+export async function leaveFamily(): Promise<{ ok: boolean; error?: string }> {
+  const userId = await requireUser();
+  const t = await getT();
+  const membership = await db.select().from(familyMembers).where(eq(familyMembers.userId, userId)).limit(1);
+  if (!membership.length) return { ok: false, error: t("fam.noFamily") };
+  if (membership[0].role === "owner") return { ok: false, error: t("fam.ownerCannotLeave") };
+  await db.delete(familyMembers).where(eq(familyMembers.userId, userId));
+  return { ok: true };
+}
+
+export async function removeFamilyMember(memberUserId: string): Promise<{ ok: boolean; error?: string }> {
+  const userId = await requireUser();
+  const t = await getT();
+  const membership = await db.select().from(familyMembers).where(eq(familyMembers.userId, userId)).limit(1);
+  if (!membership.length || membership[0].role !== "owner") return { ok: false, error: t("fam.onlyOwnerRemove") };
+  if (memberUserId === userId) return { ok: false, error: t("fam.ownerCannotLeave") };
+  await db.delete(familyMembers).where(and(eq(familyMembers.familyId, membership[0].familyId), eq(familyMembers.userId, memberUserId)));
+  return { ok: true };
+}
+
+export async function revokeFamilyInvite(inviteId: number): Promise<{ ok: boolean; error?: string }> {
+  const userId = await requireUser();
+  const t = await getT();
+  const membership = await db.select().from(familyMembers).where(eq(familyMembers.userId, userId)).limit(1);
+  if (!membership.length || membership[0].role !== "owner") return { ok: false, error: t("fam.onlyOwnerRemove") };
+  await db.update(familyInvites).set({ revokedAt: new Date() }).where(and(eq(familyInvites.id, inviteId), eq(familyInvites.familyId, membership[0].familyId)));
   return { ok: true };
 }

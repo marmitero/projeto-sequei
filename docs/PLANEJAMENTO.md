@@ -89,7 +89,7 @@ Corrigir os 8 erros de lint; env-driven config + build sem banco; renomear packa
 > **Limitações honestas (futuro):** notificações só funcionam com o app aberto (Web Push/VAPID com service worker exige servidor de push — fora do escopo); integração Google Fit/Apple Health é por arquivo (OAuth das APIs exige credenciais/configuração do usuário); o critério retenção D30 e o streak médio ≥ 5 dias são métricas de produto — deriváveis dos dados (`daily streaks` em `src/lib/gamification.ts`), mas não mensuráveis no ambiente de teste. Envio do relatório semanal por push/e-mail permanece pendente (mencionado na Fase 2).
 
 ### Fase 4 — Escala (contínuo) 🟡 **primeira leva concluída em 2026-10-25**
-- Planos compartilhados (nutricionista ↔ aluno) ✅; receitas da comunidade ✅; ajuste inteligente de metas ✅ (determinístico, sem IA); **i18n pt/en/fr/es/zh ✅ (2026-10-26)**; **grupo de família com conta vinculada — em andamento**; apps nativos se houver tração.
+- Planos compartilhados (nutricionista ↔ aluno) ✅; receitas da comunidade ✅; ajuste inteligente de metas ✅ (determinístico, sem IA); **i18n pt/en/fr/es/zh ✅ (2026-10-26)**; **grupo de família com conta vinculada ✅ (2026-10-26)**; apps nativos se houver tração.
 
 > **Status (leva implementada):**
 > - **Planos compartilhados** ✅ — links somente-leitura (`plan_shares`, migração `0003`): criação/cópia/revogação em `/perfil`; página pública `/compartilhar/[token]` com resumo, metas, plano semanal, últimos 7 dias e evolução de peso. Cobre nutricionista ↔ aluno **e** acompanhamento familiar pelo mesmo mecanismo.
