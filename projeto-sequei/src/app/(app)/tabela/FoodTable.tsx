@@ -221,7 +221,7 @@ export default function FoodTable({ profile }: { profile: Profile }) {
               <div className="mt-1.5 flex flex-wrap gap-1">
                 {badges(f).map((b) => (
                   <span key={b.l} className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${b.c}`}>
-                    {b.l}
+                    {t(b.l)}
                   </span>
                 ))}
               </div>

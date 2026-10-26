@@ -61,7 +61,7 @@ export default function GoalCoachPanel({ recs, hasOverrides }: { recs: Recommend
             </div>
             {r.apply && (
               <button className="btn-primary mt-3 self-start !px-3 !py-1.5 text-xs" onClick={() => apply(r)}>
-                {applied === r.key ? "coach.applied" : "coach.apply"}
+                {t(applied === r.key ? "coach.applied" : "coach.apply")}
               </button>
             )}
           </div>

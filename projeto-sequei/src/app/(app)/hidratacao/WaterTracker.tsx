@@ -82,21 +82,14 @@ export default function WaterTracker({
 
   const age = ageFrom(profile.birthDate);
   const tips: { key: string; vars?: Record<string, string | number> }[] = [
-    {
-      key: "water.tipBase",
-      vars: {
-        mlkg: age > 55 ? 30 : 35,
-        kg: profile.weightKg,
-        climate: profile.climate === "quente" ? t("water.tipClimate") : "",
-        total: fmt(base),
-      },
-    },
+    { key: "water.tipBase", vars: { weight: profile.weightKg, age } },
   ];
+  if (profile.climate === "quente") tips.push({ key: "water.tipClimate", vars: { climate: t(`climate.${{ quente: "hot", frio: "cold", ameno: "mild" }[profile.climate] ?? "mild"}`) } });
   if (extra) tips.push({ key: "water.tipWorkout", vars: { ml: extra } });
   if (profile.healthConditions.includes("gestante")) tips.push({ key: "water.tipPregnant" });
   if (profile.healthConditions.includes("lactante")) tips.push({ key: "water.tipNursing" });
   if (profile.healthConditions.includes("renal")) tips.push({ key: "water.tipRenal" });
-  if (age > 55) tips.push({ key: "water.tipSenior" });
+  if (age > 55) tips.push({ key: "water.tipSenior", vars: { age } });
   tips.push({ key: "water.tipUrine" });
 
   const add = (ml: number) => start(() => addWater(today, ml));

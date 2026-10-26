@@ -1,4 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { useT } from "@/lib/i18n";
+import { fmt } from "@/lib/format";
 
 export function Ring({
   value,
@@ -62,10 +66,6 @@ export const MACRO_COLORS = {
 
 // MacroRow/MacroPills (com rótulos traduzidos) ficam em ./Macros (client island).
 
-export function fmt(n: number, d = 0) {
-  return Number(n.toFixed(d)).toLocaleString("pt-BR");
-}
-
 export function PageHeader({ title, subtitle, icon, action }: { title: string; subtitle?: string; icon?: ReactNode; action?: ReactNode }) {
   return (
     <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -82,6 +82,7 @@ export function PageHeader({ title, subtitle, icon, action }: { title: string; s
 }
 
 export function Stat({ label, value, sub, icon, tone = "emerald" }: { label: string; value: ReactNode; sub?: ReactNode; icon?: ReactNode; tone?: string }) {
+  const t = useT();
   const tones: Record<string, string> = {
     emerald: "bg-emerald-50 text-emerald-600 dark:text-emerald-400",
     sky: "bg-sky-50 text-sky-600 dark:text-sky-400",
@@ -94,10 +95,10 @@ export function Stat({ label, value, sub, icon, tone = "emerald" }: { label: str
     <div className="card p-4">
       <div className="flex items-center gap-2">
         {icon && <div className={`grid h-8 w-8 place-items-center rounded-xl ${tones[tone]}`}>{icon}</div>}
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t(label)}</span>
       </div>
       <div className="mt-2 text-2xl font-bold tabular-nums text-slate-900">{value}</div>
-      {sub && <div className="mt-0.5 text-xs text-slate-500">{sub}</div>}
+      {sub && <div className="mt-0.5 text-xs text-slate-500">{typeof sub === "string" ? t(sub) : sub}</div>}
     </div>
   );
 }
@@ -213,11 +214,14 @@ export function BarChart({ data, target, color = "#06b6d4", height = 160, unit =
 }
 
 export function Empty({ icon, title, text }: { icon: ReactNode; title: string; text?: string }) {
+  const t = useT();
   return (
     <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
       <div className="grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-400">{icon}</div>
-      <div className="font-semibold text-slate-700">{title}</div>
-      {text && <div className="max-w-xs text-sm text-slate-500">{text}</div>}
+      <div className="font-semibold text-slate-700">{t(title)}</div>
+      {text && <div className="max-w-xs text-sm text-slate-500">{t(text)}</div>}
     </div>
   );
 }
+
+export { fmt };

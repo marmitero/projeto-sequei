@@ -158,7 +158,7 @@ export default function FoodDiary({ date, today, profile, targets, entries, seed
                   <div>
                     <div className="font-bold">{tr(MEALS[mk]?.label ?? "")}</div>
                     <div className="text-xs text-slate-500">
-                      {fmt(t)} {tr("common.kcal")} {planMeal && ` · ${tr("food.mealGoal", { kcal: planMeal.target.kcal })}`}
+                      {fmt(t)} {tr("common.kcal")} {planMeal && ` · ${tr("food.mealGoal", { n: planMeal.target.kcal })}`}
                     </div>
                   </div>
                 </div>

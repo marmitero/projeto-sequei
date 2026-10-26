@@ -1,11 +1,14 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { resetAccount } from "@/app/actions";
 
 export default function ResetButton() {
+  const t = useT();
   const [pending, start] = useTransition();
   const router = useRouter();
   return (
@@ -20,7 +23,7 @@ export default function ResetButton() {
         });
       }}
     >
-      <Trash2 size={16} /> {pending ? "reset.deleting" : "reset.delete"}
+      <Trash2 size={16} /> {t(pending ? "reset.deleting" : "reset.delete")}
     </button>
   );
 }

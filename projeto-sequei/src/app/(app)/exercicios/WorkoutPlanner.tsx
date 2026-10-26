@@ -38,9 +38,9 @@ export default function WorkoutPlanner({ profile, today, logs }: { profile: Prof
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="wp.weekWorkouts" value={`${weekLogs.length}/${profile.trainingDays}`} icon={<Activity size={16} />} tone="amber" />
-        <Stat label="wp.activeMinutes" value={fmt(weekMin)} sub="wp.whoGoal" icon={<Clock size={16} />} tone="sky" />
-        <Stat label="wp.kcalBurned" value={fmt(weekKcal)} sub="wp.thisWeek" icon={<Flame size={16} />} tone="rose" />
-        <Stat label="wp.split" value={profile.trainingDays <= 3 ? "wp.fullBody" : profile.trainingDays === 4 ? "wp.upperLower" : "PPL"} sub={`${profile.sessionMinutes} min/sessão`} icon={<Dumbbell2 />} tone="emerald" />
+        <Stat label="wp.activeMinutes" value={fmt(weekMin)} sub={t("wp.whoGoal")} icon={<Clock size={16} />} tone="sky" />
+        <Stat label="wp.kcalBurned" value={fmt(weekKcal)} sub={t("wp.thisWeek")} icon={<Flame size={16} />} tone="rose" />
+        <Stat label="wp.split" value={t(profile.trainingDays <= 3 ? "wp.fullBody" : profile.trainingDays === 4 ? "wp.upperLower" : "wp.ppl")} sub={`${profile.sessionMinutes} ${t("wp.perSession")}`} icon={<Dumbbell2 />} tone="emerald" />
       </div>
 
       {/* Semana */}
@@ -81,7 +81,7 @@ export default function WorkoutPlanner({ profile, today, logs }: { profile: Prof
             <>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">{WEEKDAYS[session.weekday]}</div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">{t(WEEKDAYS[session.weekday])}</div>
                   <h2 className="text-2xl font-bold">{session.title}</h2>
                   <p className="text-sm text-slate-500">{session.focus}</p>
                   <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
@@ -101,7 +101,7 @@ export default function WorkoutPlanner({ profile, today, logs }: { profile: Prof
               {profile.injuries.length > 0 && (
                 <div className="mt-4 flex items-start gap-2 rounded-2xl bg-sky-50 p-3 text-sm text-sky-800 dark:text-sky-300">
                   <ShieldCheck size={16} className="mt-0.5 shrink-0" />
-                  Exercícios de risco para {profile.injuries.map((i) => INJURY_LABELS[i]?.toLowerCase()).join(", ")} foram excluídos. Pare se sentir dor.
+                  {t("wp.riskNote", { list: profile.injuries.map((i) => t(INJURY_LABELS[i]).toLowerCase()).join(", ") })}
                 </div>
               )}
               <div className="mt-4 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200">
@@ -135,9 +135,9 @@ export default function WorkoutPlanner({ profile, today, logs }: { profile: Prof
                   <Footprints className="text-orange-500" />
                   <div>
                     <div className="font-semibold">
-                      Cardio: {session.cardio.label} · {session.cardio.minutes} min
+                      {t("wp.cardio")}: {t(session.cardio.label)} · {session.cardio.minutes} min
                     </div>
-                    <div className="text-xs text-slate-600">{session.cardio.desc}</div>
+                    <div className="text-xs text-slate-600">{t(session.cardio.desc)}</div>
                   </div>
                 </div>
               )}
@@ -146,7 +146,7 @@ export default function WorkoutPlanner({ profile, today, logs }: { profile: Prof
               </p>
             </>
           ) : (
-            <Empty icon={<span className="text-2xl">🧘</span>} title={`${WEEKDAYS[selDay]}: descanso`} text="Recuperação também é treino. Uma caminhada leve ou alongamento de 10–15 min ajudam na recuperação." />
+            <Empty icon={<span className="text-2xl">🧘</span>} title={`${t(WEEKDAYS[selDay])}: ${t("wp.restDay")}`} text={t("wp.restTip")} />
           )}
         </div>
 
@@ -291,7 +291,7 @@ function LogModal({ profile, today, session, onClose }: { profile: Profile; toda
             {t("wp.estBurn")}: <b className="text-orange-600">{kcal} {t("common.kcal")}</b>
           </div>
           <button className="btn-primary w-full !py-3" disabled={pending} onClick={save}>
-            {pending ? "mp.saving" : "wp.saveWorkout"}
+            {t(pending ? "mp.saving" : "wp.saveWorkout")}
           </button>
         </div>
       </div>

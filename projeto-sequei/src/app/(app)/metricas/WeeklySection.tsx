@@ -20,10 +20,11 @@ function Delta({ cur, prev, unit, invert = false }: { cur: number; prev: number;
 }
 
 function StatCard({ icon, label, value, sub, delta }: { icon: ReactNode; label: string; value: string; sub?: string; delta?: React.ReactNode }) {
+  const t = useT();
   return (
     <div className="card p-4">
       <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-        {icon} {label}
+        {icon} {t(label)}
       </div>
       <div className="mt-1.5 text-2xl font-black tabular-nums">{value}</div>
       <div className="mt-0.5 flex items-center gap-2">

@@ -83,7 +83,7 @@ export default function PhotosSection({ today, initialPhotos }: { today: string;
           <input className="input" value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t("photo.notePh")} />
         </div>
         <label className={`btn-primary cursor-pointer ${busy ? "opacity-60" : ""}`}>
-          <Upload size={16} /> {busy ? "photo.uploading" : "photo.upload"}
+          <Upload size={16} /> {t(busy ? "photo.uploading" : "photo.upload")}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -96,7 +96,7 @@ export default function PhotosSection({ today, initialPhotos }: { today: string;
             }}
           />
         </label>
-        {msg && <p className="w-full text-sm text-emerald-600 dark:text-emerald-400">{msg}</p>}
+        {msg && <p className="w-full text-sm text-emerald-600 dark:text-emerald-400">{t(msg)}</p>}
       </div>
 
       {selected.length === 2 && (

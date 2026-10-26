@@ -67,11 +67,11 @@ export default function SharePanel({ shares }: { shares: Share[] }) {
             <li key={s.id} className="flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 px-3 py-2">
               <Link2 size={15} className="text-slate-400" />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold">{s.label || "share.unnamed"}</div>
+                <div className="truncate text-sm font-semibold">{s.label || t("share.unnamed")}</div>
                 <div className="truncate font-mono text-xs text-slate-400">/compartilhar/{s.token.slice(0, 12)}…</div>
               </div>
               <button className="btn-ghost !px-2.5 !py-1.5 text-xs" onClick={() => copy(s.token, s.id)}>
-                {copied === s.id ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />} {copied === s.id ? "share.copied" : "share.copy"}
+                {copied === s.id ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />} {t(copied === s.id ? "share.copied" : "share.copy")}
               </button>
               <button className="btn-ghost !px-2.5 !py-1.5 text-xs text-rose-600" onClick={() => revoke(s.id)}>
                 <X size={14} /> {t("share.revoke")}

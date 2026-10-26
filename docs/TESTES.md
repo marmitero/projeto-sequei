@@ -238,10 +238,16 @@ Bateria final: **typecheck 0 · lint 0 · 121/121 testes** (63 unit + 58 e2e) ·
 ## 16. Validação do i18n (2026-10-26)
 
 - `tests/unit/i18n.test.ts` (7): paridade exata de chaves entre os 5 dicionários, variáveis `{{var}}` idênticas, sem valores vazios, `translate` com interpolação e fallback, cobertura das chaves usadas.
-- `tests/e2e/i18n.test.ts` (2): `/onboarding` renderiza nos 5 idiomas conforme o cookie `fitvida-lang` (pt por padrão; cookie inválido cai no pt); dashboard autenticado traduz ("Peso atual" ↔ "Current weight" ↔ "当前体重").
+- `tests/e2e/i18n.test.ts` (5): `/onboarding` renderiza nos 5 idiomas conforme o cookie `fitvida-lang` (pt por padrão; cookie inválido cai no pt); dashboard autenticado traduz ("Peso atual" ↔ "Current weight" ↔ "当前体重"); toggles de idioma/tema na 1ª tela do cadastro; regressão de vazamento de chaves/`{{ }}` crus em 9 rotas autenticadas; dashboard sem chaves de emblemas cruas.
 - Bateria completa: **70 unit + 60 e2e = 130/130** (os 121 testes anteriores permanecem verdes com o locale padrão pt-BR; textos PT da UI foram ajustados para os textos originais já cobertos pelos asserts).
 
 ## 17. Validação da família com conta vinculada (2026-10-26)
 
 - `tests/e2e/familia.test.ts` (3): criação de grupo, convite por código (hex 32, uso único — segundo uso falha), código inválido rejeitado, overview com papéis, permissões (membro não convida nem remove; dono não sai; dono remove; membro sai).
 - Bateria completa: **70 unit + 63 e2e = 133/133**.
+
+## 18. Validação estilo usuário (2026-10-26)
+
+- Relatório completo: `docs/VALIDACAO-USUARIO.md` (método, bugs encontrados e corrigidos, limitações conhecidas e sugestões de sistema/UX).
+- Correções validadas: toggles de idioma/tema na 1ª tela do cadastro; 17 pontos de chaves i18n cruas em 11 telas; variáveis `{{ }}` em `/alimentacao`, `/hidratacao` e dashboard; chaves de emblemas (`game.badge.*`) adicionadas aos 5 dicionários; textos fixos PT em `/exercicios` e `/receitas` convertidos (`wp.*`, `prog.*`).
+- Bateria completa: **70 unit + 66 e2e = 136/136**.

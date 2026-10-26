@@ -7,7 +7,8 @@ import GamificationPanel from "@/components/GamificationPanel";
 import { addDays, GOALS, personalTips, weekdayOf, bmi, bmiClass, formatDateBR, weeksToGoal } from "@/lib/calc";
 import { generateWorkoutPlan, WEEKDAYS } from "@/lib/exercises";
 import { RECIPES, recipeNutrition, recipeCompatibility } from "@/lib/recipes";
-import { Ring, Stat, LineChart, fmt } from "@/components/ui";
+import { Ring, Stat, LineChart } from "@/components/ui";
+import { fmt } from "@/lib/format";
 import { MacroRow, MacroPills } from "@/components/Macros";
 
 export default async function Dashboard() {
@@ -67,7 +68,7 @@ export default async function Dashboard() {
         </h1>
         <p className="text-sm text-slate-500">
           {t("dash.goalLabel")}: <b className="text-slate-700">{t(GOALS[profile.goal]?.label ?? "")}</b> · {profile.weightKg} {t("common.kg")} → {profile.targetWeightKg} {t("common.kg")}
-          {weeks ? ` · ${t("dash.weeksEstimate", { weeks })}` : ""}
+          {weeks ? ` · ${t("dash.weeksEstimate", { n: weeks })}` : ""}
         </p>
       </div>
 
@@ -78,7 +79,7 @@ export default async function Dashboard() {
             <Ring value={eaten.kcal} max={targets.kcal + burned} size={168} stroke={16}>
               <div>
                 <div className="text-3xl font-bold tabular-nums">{fmt(Math.abs(remaining))}</div>
-                <div className="text-xs text-slate-500">{remaining >= 0 ? t("dash.kcalLeft") : t("dash.kcalOver")}</div>
+                <div className="text-xs text-slate-500">{t(remaining >= 0 ? "dash.kcalLeft" : "dash.kcalOver", { n: "" })}</div>
               </div>
             </Ring>
             <div className="w-full flex-1 space-y-3">
@@ -88,7 +89,7 @@ export default async function Dashboard() {
                   <div className="font-bold tabular-nums">{fmt(targets.kcal)}</div>
                 </div>
                 <div className="rounded-2xl bg-emerald-50 p-2.5">
-                  <div className="text-[11px] uppercase text-emerald-700 dark:text-emerald-300">{t("dash.eaten")}</div>
+                  <div className="text-[11px] uppercase text-emerald-700 dark:text-emerald-300">{t("dash.eaten", { n: "" })}</div>
                   <div className="font-bold tabular-nums text-emerald-700 dark:text-emerald-300">{fmt(eaten.kcal)}</div>
                 </div>
                 <div className="rounded-2xl bg-orange-50 p-2.5">

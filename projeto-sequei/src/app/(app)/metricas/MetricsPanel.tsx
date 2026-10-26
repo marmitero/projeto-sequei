@@ -172,7 +172,7 @@ export default function MetricsPanel({
             <input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("mp.notesPh")} />
           </div>
           <button className="btn-primary mt-4 w-full" disabled={pending} onClick={save}>
-            {saved ? <CheckCircle2 size={16} /> : <Save size={16} />} {pending ? "mp.saving" : saved ? "mp.saved" : "common.save"}
+            {saved ? <CheckCircle2 size={16} /> : <Save size={16} />} {t(pending ? "mp.saving" : saved ? "mp.saved" : "common.save")}
           </button>
           <p className="mt-2 text-xs text-slate-500">{t("mp.measureTip")}</p>
         </div>

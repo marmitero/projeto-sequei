@@ -147,9 +147,9 @@ export default function CommunityBoard({ recipes: initial }: { recipes: Recipe[]
                   <input className="input" inputMode="numeric" value={form.fat} onChange={set("fat")} />
                 </div>
               </div>
-              {msg && <p className="text-sm text-rose-600">{msg}</p>}
+              {msg && <p className="text-sm text-rose-600">{t(msg)}</p>}
               <button className="btn-primary w-full" onClick={submit} disabled={busy}>
-                {busy ? "photo.uploading" : "comm.publish"}
+                {t(busy ? "photo.uploading" : "comm.publish")}
               </button>
             </div>
           </div>

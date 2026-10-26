@@ -4,7 +4,7 @@ export type LoadPoint = { date: string; loadKg: number | null; sets: number; rep
 export type Progression = {
   exercise: string;
   series: LoadPoint[];
-  suggestion: { action: "increase" | "maintain" | "deload" | "none"; nextKg: number | null; text: string };
+  suggestion: { action: "increase" | "maintain" | "deload" | "none"; nextKg: number | null; textKey: string; vars?: Record<string, string | number> };
 };
 
 /** Extrai o peso em kg de uma string de carga ("20", "20 kg", "20,5kg", "12.5 lbs"?→não). */
@@ -39,7 +39,7 @@ export function progressionFor(
 
   const suggestion = ((): Progression["suggestion"] => {
     if (series.length < 2) {
-      return { action: "none", nextKg: null, text: "Registre este exercício em pelo menos 2 sessões para receber sugestão de carga." };
+      return { action: "none", nextKg: null, textKey: "prog.sugNone" };
     }
     const last = series.slice(-2);
     const avgEffort = series.slice(-2).reduce((a, p) => a + p.effort, 0) / 2;
@@ -49,16 +49,18 @@ export function progressionFor(
     if (falling) {
       const base = series[series.length - 1].loadKg;
       const next = base === null ? null : roundHalf(Math.max(base * 0.9, 0));
-      return { action: "deload", nextKg: next, text: `Carga caindo nas últimas sessões — considere aliviar${next !== null ? ` para ~${fmtKg(next)} kg` : ""} e reconstruir.` };
+      return next !== null
+        ? { action: "deload", nextKg: next, textKey: "prog.sugDeloadKg", vars: { kg: fmtKg(next) } }
+        : { action: "deload", nextKg: null, textKey: "prog.sugDeload" };
     }
     if (avgEffort >= 9) {
-      return { action: "maintain", nextKg: loads[1], text: "Esforço muito alto (≥ 9) — mantenha a carga e refine a técnica antes de progredir." };
+      return { action: "maintain", nextKg: loads[1], textKey: "prog.sugHigh" };
     }
     if (loads[0] !== null && loads[0] === loads[1]) {
       const next = roundHalf(Math.max(loads[1]! * 1.05, loads[1]! + 0.5));
-      return { action: "increase", nextKg: next, text: `Duas sessões na mesma carga com esforço controlado — tente ${fmtKg(next)} kg (+5%) na próxima.` };
+      return { action: "increase", nextKg: next, textKey: "prog.sugIncrease", vars: { kg: fmtKg(next) } };
     }
-    return { action: "maintain", nextKg: loads[1], text: "Continue progredindo no seu ritmo — registre a carga em todas as séries principais." };
+    return { action: "maintain", nextKg: loads[1], textKey: "prog.sugKeep" };
   })();
 
   return { exercise: exerciseName, series, suggestion };

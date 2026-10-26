@@ -45,7 +45,7 @@ export default function RecipeBrowser({ profile, today, initial, remaining }: { 
           </button>
           {Object.entries(RECIPE_CATEGORIES).map(([k, l]) => (
             <button key={k} onClick={() => setCat(k)} className={`shrink-0 ${cat === k ? "chip-on" : "chip-off"}`}>
-              {l}
+              {t(l)}
             </button>
           ))}
         </div>
@@ -228,7 +228,7 @@ function RecipeModal({ r, profile, today, onClose }: { r: Recipe; profile: Profi
               })
             }
           >
-            {done ? <Check size={16} /> : <Plus size={16} />} {done ? "recipe.logged" : `Registrar · ${Math.round(n.kcal * servings)} kcal`}
+            {done ? <Check size={16} /> : <Plus size={16} />} {done ? t("recipe.logged") : `${t("dash.log")} · ${Math.round(n.kcal * servings)} ${t("common.kcal")}`}
           </button>
         </div>
       </div>

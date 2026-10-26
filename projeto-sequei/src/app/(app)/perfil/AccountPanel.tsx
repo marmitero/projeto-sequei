@@ -94,7 +94,7 @@ export default function AccountPanel({ email }: { email: string | null }) {
           </a>
           {CSV_LINKS.map((l) => (
             <a key={l.href} href={l.href} className="btn-outline !px-3 !py-2 text-xs" download>
-              <Table2 size={14} /> CSV {l.label}
+              <Table2 size={14} /> CSV {t(l.label)}
             </a>
           ))}
         </div>

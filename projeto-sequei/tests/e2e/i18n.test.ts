@@ -46,3 +46,46 @@ describe("i18n — cookie fitvida-lang", () => {
     expect(dashZh.body).toContain("当前体重");
   });
 });
+
+describe("validação estilo usuário — regressões", () => {
+  it("/onboarding tem seleção de idioma e de tema na primeira tela", async () => {
+    const res = await get("/onboarding");
+    expect(res.status).toBe(200);
+    // toggles de idioma e tema presentes na primeira tela
+    expect(res.body).toContain("Alterar idioma");
+    expect(res.body).toContain("modo escuro");
+    // wizard continua na primeira tela
+    expect(res.body).toContain("Vamos montar seu plano");
+    // mecanismo de tema (localStorage + script anti-FOUC) presente
+    expect(res.body).toContain("fitvida-theme");
+    expect(res.body).toContain("prefers-color-scheme");
+  });
+
+  it("nenhuma chave de i18n crua nem {{ }} cruo nas rotas principais (pt)", async () => {
+    const p = await callAction("/onboarding", "saveProfile", [{ ...profileBase, name: "Leak Scan" }]);
+    const cookie = cookieFrom(p)!;
+    expect(cookie).toBeTruthy();
+    const pages = ["/", "/alimentacao", "/hidratacao", "/exercicios", "/metricas", "/compras", "/comunidade", "/familia", "/perfil"];
+    const leaked: string[] = [];
+    for (const path of pages) {
+      const res = await get(path, cookie);
+      expect(res.status).toBe(200);
+      // remove scripts (flight/props) — só o HTML visível importa
+      const html = res.body.replace(/<script[\s\S]*?<\/script>/g, "");
+      if (html.includes("{{")) leaked.push(path + ": {{}} crua");
+      const m = html.match(/\b(?:wiz|dash|food|add|water|wp|mp|week|photo|coach|recipe|share|comm|fam|acc|health|table|pages|common|nav|goal|meal|act|bmi|note|tip|game|auth|restr|cond|equip|inj|cardio|day|dayShort|climate|loc|exp|carb|carbDesc|diet|prog|shop|nf|err|macro|reset|reminders)\.[A-Za-z]\w+/);
+      if (m) leaked.push(path + ": " + m[0]);
+    }
+    expect(leaked).toEqual([]);
+  });
+
+  it("dashboard não exibe chaves de emblemas cruas", async () => {
+    const p = await callAction("/onboarding", "saveProfile", [{ ...profileBase, name: "Badge Scan" }]);
+    const cookie = cookieFrom(p)!;
+    const body = (await get("/", cookie)).body;
+    const html = body.replace(/<script[\s\S]*?<\/script>/g, "");
+    expect(html).not.toContain("game.badge.");
+    expect(html).toContain("Sequências e marcos");
+    expect(html).toContain("kcal restantes");
+  });
+});

@@ -48,7 +48,7 @@ export default function HealthImportPanel() {
         {t("health.desc1")} <b>Apple Health</b> {t("health.desc2")} <b>Google Fit</b> {t("health.desc3")}
       </p>
       <label className={`btn-primary mt-3 inline-flex cursor-pointer ${busy ? "opacity-60" : ""}`}>
-        <Upload size={16} /> {busy ? "health.importing" : "health.chooseFile"}
+        <Upload size={16} /> {t(busy ? "health.importing" : "health.chooseFile")}
         <input
           type="file"
           accept=".xml,.csv,text/xml,text/csv,application/xml"
@@ -61,7 +61,7 @@ export default function HealthImportPanel() {
           }}
         />
       </label>
-      {msg && <p className={`mt-3 text-sm ${err ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`}>{msg}</p>}
+      {msg && <p className={`mt-3 text-sm ${err ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}`}>{t(msg)}</p>}
     </div>
   );
 }

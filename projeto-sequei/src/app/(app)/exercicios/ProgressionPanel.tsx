@@ -100,9 +100,9 @@ export default function ProgressionPanel({ logs, today }: { logs: Log[]; today: 
           <TrendingUp size={18} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
           <div className="min-w-0 flex-1">
             <div className="text-sm font-semibold text-emerald-900">
-              Sugestão: {sug.action === "increase" ? "prog.increase" : sug.action === "maintain" ? "prog.maintain" : sug.action === "deload" ? "prog.deload" : "prog.none"}
+              {t("prog.suggestionLabel")}: {t(sug.action === "increase" ? "prog.increase" : sug.action === "maintain" ? "prog.maintain" : sug.action === "deload" ? "prog.deload" : "prog.none")}
             </div>
-            <p className="mt-0.5 text-sm text-emerald-800 dark:text-emerald-300">{sug.text}</p>
+            <p className="mt-0.5 text-sm text-emerald-800 dark:text-emerald-300">{t(sug.textKey, sug.vars)}</p>
           </div>
         </div>
         {sug.action !== "none" && nextKg != null && (
