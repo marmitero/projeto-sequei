@@ -1,15 +1,17 @@
 import { Dumbbell } from "lucide-react";
+import { getT } from "@/lib/i18n-server";
 import { getContext, workoutsBetween } from "@/lib/data";
 import { addDays } from "@/lib/calc";
 import { PageHeader } from "@/components/ui";
 import WorkoutPlanner from "./WorkoutPlanner";
 
 export default async function ExerciciosPage() {
+  const t = await getT();
   const { user, profile, today } = await getContext();
   const logs = await workoutsBetween(user.id, addDays(today, -60), today);
   return (
     <>
-      <PageHeader title="Treinos" subtitle="Plano semanal montado para seu objetivo, nível, local, equipamentos e lesões." icon={<Dumbbell size={22} />} />
+      <PageHeader title={t("nav.workout")} subtitle={t("pages.workoutSub")} icon={<Dumbbell size={22} />} />
       <WorkoutPlanner
         profile={profile}
         today={today}

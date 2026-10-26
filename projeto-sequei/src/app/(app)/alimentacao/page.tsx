@@ -1,16 +1,18 @@
 import { Utensils } from "lucide-react";
+import { getT } from "@/lib/i18n-server";
 import { getContext, foodsOn } from "@/lib/data";
 import { PageHeader } from "@/components/ui";
 import FoodDiary from "./FoodDiary";
 
 export default async function AlimentacaoPage({ searchParams }: { searchParams: Promise<{ d?: string }> }) {
+  const t = await getT();
   const { user, profile, targets, today } = await getContext();
   const sp = await searchParams;
   const date = sp.d && /^\d{4}-\d{2}-\d{2}$/.test(sp.d) ? sp.d : today;
   const entries = await foodsOn(user.id, date);
   return (
     <>
-      <PageHeader title="Alimentação" subtitle="Registre o que comeu, veja seus macros e siga um cardápio feito para você." icon={<Utensils size={22} />} />
+      <PageHeader title={t("nav.food")} subtitle={t("pages.foodSub")} icon={<Utensils size={22} />} />
       <FoodDiary
         date={date}
         today={today}

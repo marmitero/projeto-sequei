@@ -1,16 +1,20 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+
 import { useMemo, useState, useTransition } from "react";
 import { Clock, Users, X, Check, Plus, AlertTriangle, Sparkles, Leaf } from "lucide-react";
 import { RECIPES, RECIPE_CATEGORIES, recipeNutrition, recipeCompatibility, type Recipe } from "@/lib/recipes";
 import { FOOD_MAP, macrosFor } from "@/lib/foods";
 import { MEALS, mealsFor, type Profile } from "@/lib/calc";
 import { addFoodEntries } from "@/app/actions";
-import { MacroPills, fmt } from "@/components/ui";
+import { fmt } from "@/components/ui";
+import { MacroPills } from "@/components/Macros";
 
 type Rem = { kcal: number; protein: number; carbs: number; fat: number };
 
 export default function RecipeBrowser({ profile, today, initial, remaining }: { profile: Profile; today: string; initial: string | null; remaining: Rem }) {
+  const t = useT();
   const [cat, setCat] = useState<string>("");
   const [onlyMine, setOnlyMine] = useState(true);
   const [sort, setSort] = useState("fit");
@@ -37,7 +41,7 @@ export default function RecipeBrowser({ profile, today, initial, remaining }: { 
       <div className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="scrollbar-none -mx-1 flex gap-2 overflow-x-auto px-1">
           <button onClick={() => setCat("")} className={`shrink-0 ${!cat ? "chip-on" : "chip-off"}`}>
-            Todas
+            {t("recipe.all")}
           </button>
           {Object.entries(RECIPE_CATEGORIES).map(([k, l]) => (
             <button key={k} onClick={() => setCat(k)} className={`shrink-0 ${cat === k ? "chip-on" : "chip-off"}`}>
@@ -47,14 +51,14 @@ export default function RecipeBrowser({ profile, today, initial, remaining }: { 
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <select value={sort} onChange={(e) => setSort(e.target.value)} className="input !w-auto !py-2">
-            <option value="fit">Melhor para hoje</option>
-            <option value="protein">Mais proteína</option>
-            <option value="carbs">Menos carboidrato</option>
-            <option value="kcal">Menos calorias</option>
+            <option value="fit">{t("recipe.bestToday")}</option>
+            <option value="protein">{t("recipe.moreProtein")}</option>
+            <option value="carbs">{t("recipe.lessCarbs")}</option>
+            <option value="kcal">{t("recipe.lessKcal")}</option>
           </select>
           <label className="flex cursor-pointer items-center gap-2 whitespace-nowrap text-sm text-slate-600">
             <input type="checkbox" className="h-4 w-4 accent-emerald-600" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} />
-            Só compatíveis
+            {t("recipe.onlyCompatible")}
           </label>
         </div>
       </div>
@@ -70,7 +74,7 @@ export default function RecipeBrowser({ profile, today, initial, remaining }: { 
             <div className={`relative flex h-36 items-center justify-center bg-gradient-to-br ${r.gradient}`}>
               <span className="text-7xl drop-shadow-lg transition group-hover:scale-110">{r.emoji}</span>
               <span className="absolute left-3 top-3 rounded-full bg-white/90 dark:bg-slate-100/90 px-2.5 py-1 text-[11px] font-bold text-slate-700">{RECIPE_CATEGORIES[r.category]}</span>
-              {sort === "fit" && i < 3 && comp.ok && <span className="absolute right-3 top-3 rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white">★ Ideal hoje</span>}
+              {sort === "fit" && i < 3 && comp.ok && <span className="absolute right-3 top-3 rounded-full bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white">★ {t("recipe.idealToday")}</span>}
               <span className="absolute bottom-3 right-3 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-bold text-white">{fmt(n.netCarbs, 1)} g carbo líq.</span>
             </div>
             <div className="p-4">
@@ -97,14 +101,15 @@ export default function RecipeBrowser({ profile, today, initial, remaining }: { 
           </button>
         ))}
       </div>
-      {!list.length && <div className="card p-10 text-center text-slate-500">Nenhuma receita compatível nessa categoria. Desmarque “Só compatíveis” para ver todas.</div>}
+      {!list.length && <div className="card p-10 text-center text-slate-500">{t("recipe.noCompatible")}</div>}
 
       {open && <RecipeModal r={open} profile={profile} today={today} onClose={() => setOpen(null)} />}
     </div>
   );
 }
 
-function RecipeModal({ r, profile, today, onClose }: { r: Recipe; profile: Profile; today: string; onClose: () => void }) {
+function RecipeModal({ r, profile, today, onClose }: { r: Recipe; profile: Profile; today: string; onClose: () => void }) {  const t = useT();
+
   const n = recipeNutrition(r);
   const comp = recipeCompatibility(r, profile.diet, profile.restrictions, profile.dislikes);
   const meals = mealsFor(profile.mealsPerDay);
@@ -120,7 +125,7 @@ function RecipeModal({ r, profile, today, onClose }: { r: Recipe; profile: Profi
       <div className="relative flex max-h-[94vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl bg-white dark:bg-slate-100 animate-fade-up sm:rounded-3xl">
         <div className={`relative flex h-40 shrink-0 items-center justify-center bg-gradient-to-br ${r.gradient} sm:h-48`}>
           <span className="text-8xl drop-shadow-xl">{r.emoji}</span>
-          <button onClick={onClose} className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 dark:bg-slate-100/90 text-slate-700" aria-label="Fechar">
+          <button onClick={onClose} className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-white/90 dark:bg-slate-100/90 text-slate-700" aria-label={t("common.close")}>
             <X size={18} />
           </button>
         </div>
@@ -148,11 +153,11 @@ function RecipeModal({ r, profile, today, onClose }: { r: Recipe; profile: Profi
           <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-6">
             {[
               ["Kcal", fmt(n.kcal), "bg-[#0f172a] text-white"],
-              ["Proteína", `${fmt(n.protein, 1)} g`, "bg-rose-50 text-rose-700 dark:text-rose-300"],
-              ["Carbo", `${fmt(n.carbs, 1)} g`, "bg-amber-50 text-amber-700 dark:text-amber-300"],
-              ["Carbo líq.", `${fmt(n.netCarbs, 1)} g`, "bg-orange-50 text-orange-700"],
-              ["Gordura", `${fmt(n.fat, 1)} g`, "bg-sky-50 text-sky-700 dark:text-sky-300"],
-              ["Fibras", `${fmt(n.fiber, 1)} g`, "bg-lime-50 text-lime-700"],
+              ["macro.protein", `${fmt(n.protein, 1)} g`, "bg-rose-50 text-rose-700 dark:text-rose-300"],
+              ["recipe.carbsShort", `${fmt(n.carbs, 1)} g`, "bg-amber-50 text-amber-700 dark:text-amber-300"],
+              ["recipe.netCarbs", `${fmt(n.netCarbs, 1)} g`, "bg-orange-50 text-orange-700"],
+              ["macro.fat", `${fmt(n.fat, 1)} g`, "bg-sky-50 text-sky-700 dark:text-sky-300"],
+              ["macro.fiber", `${fmt(n.fiber, 1)} g`, "bg-lime-50 text-lime-700"],
             ].map(([l, v, c]) => (
               <div key={l} className={`rounded-2xl p-2.5 text-center ${c}`}>
                 <div className="text-[10px] font-semibold uppercase opacity-80">{l}</div>
@@ -164,7 +169,7 @@ function RecipeModal({ r, profile, today, onClose }: { r: Recipe; profile: Profi
 
           <div className="mt-6 grid gap-6 md:grid-cols-2">
             <div>
-              <h3 className="mb-2 font-bold">Ingredientes</h3>
+              <h3 className="mb-2 font-bold">{t("recipe.ingredients")}</h3>
               <ul className="space-y-1.5">
                 {r.ingredients.map((ing, i) => {
                   const f = ing.key ? FOOD_MAP[ing.key] : null;
@@ -183,7 +188,7 @@ function RecipeModal({ r, profile, today, onClose }: { r: Recipe; profile: Profi
               </ul>
             </div>
             <div>
-              <h3 className="mb-2 font-bold">Modo de preparo</h3>
+              <h3 className="mb-2 font-bold">{t("recipe.steps")}</h3>
               <ol className="space-y-3">
                 {r.steps.map((s, i) => (
                   <li key={i} className="flex gap-3 text-sm text-slate-700">
@@ -200,7 +205,7 @@ function RecipeModal({ r, profile, today, onClose }: { r: Recipe; profile: Profi
             <select className="input !py-2" value={meal} onChange={(e) => setMeal(e.target.value)}>
               {Object.entries(MEALS).map(([k, m]) => (
                 <option key={k} value={k}>
-                  {m.emoji} {m.label}
+                  {m.emoji} {t(m.label)}
                 </option>
               ))}
             </select>
@@ -223,7 +228,7 @@ function RecipeModal({ r, profile, today, onClose }: { r: Recipe; profile: Profi
               })
             }
           >
-            {done ? <Check size={16} /> : <Plus size={16} />} {done ? "Registrado!" : `Registrar · ${Math.round(n.kcal * servings)} kcal`}
+            {done ? <Check size={16} /> : <Plus size={16} />} {done ? "recipe.logged" : `Registrar · ${Math.round(n.kcal * servings)} kcal`}
           </button>
         </div>
       </div>

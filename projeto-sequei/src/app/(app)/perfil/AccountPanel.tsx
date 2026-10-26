@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -7,14 +9,15 @@ import { Download, FileJson, LogIn, LogOut, Table2, Upload, UserPlus, Loader2 } 
 import { logoutAccount, importData, type ImportPayload } from "@/app/actions";
 
 const CSV_LINKS = [
-  { href: "/api/export?format=csv&type=profile", label: "Perfil" },
-  { href: "/api/export?format=csv&type=foods", label: "Alimentação" },
+  { href: "/api/export?format=csv&type=profile", label: "nav.profile" },
+  { href: "/api/export?format=csv&type=foods", label: "nav.food" },
   { href: "/api/export?format=csv&type=water", label: "Água" },
-  { href: "/api/export?format=csv&type=workouts", label: "Treinos" },
-  { href: "/api/export?format=csv&type=metrics", label: "Métricas" },
+  { href: "/api/export?format=csv&type=workouts", label: "nav.workout" },
+  { href: "/api/export?format=csv&type=metrics", label: "nav.metrics" },
 ];
 
 export default function AccountPanel({ email }: { email: string | null }) {
+  const t = useT();
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -36,19 +39,19 @@ export default function AccountPanel({ email }: { email: string | null }) {
           router.refresh();
         }
       } catch {
-        setErr("Arquivo inválido — use o backup JSON gerado pelo FitVida.");
+        setErr("acc.invalidFile");
       }
     });
   };
 
   return (
     <div className="card p-5 sm:p-6">
-      <h2 className="flex items-center gap-2 font-bold">Conta e backup</h2>
+      <h2 className="flex items-center gap-2 font-bold">{t("acc.title")}</h2>
 
       {email ? (
         <>
           <p className="mt-1 text-sm text-slate-500">
-            Conectado como <b className="text-slate-700">{email}</b> — seus dados são sincronizados neste perfil.
+            {t("acc.connectedAs")} <b className="text-slate-700">{email}</b> — {t("acc.synced")}
           </p>
           <button
             className="btn-outline mt-4"
@@ -61,7 +64,7 @@ export default function AccountPanel({ email }: { email: string | null }) {
               })
             }
           >
-            {pending ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />} Sair da conta
+            {pending ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />} {t("acc.logout")}
           </button>
         </>
       ) : (
@@ -72,10 +75,10 @@ export default function AccountPanel({ email }: { email: string | null }) {
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link href="/cadastro" className="btn-primary">
-              <UserPlus size={16} /> Criar conta
+              <UserPlus size={16} /> {t("auth.signupBtn")}
             </Link>
             <Link href="/login" className="btn-outline">
-              <LogIn size={16} /> Entrar
+              <LogIn size={16} /> {t("auth.loginBtn")}
             </Link>
           </div>
         </>
@@ -83,11 +86,11 @@ export default function AccountPanel({ email }: { email: string | null }) {
 
       <div className="mt-6 border-t border-slate-100 pt-5">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <Download size={16} className="text-emerald-600 dark:text-emerald-400" /> Exportar dados
+          <Download size={16} className="text-emerald-600 dark:text-emerald-400" /> {t("acc.export")}
         </h3>
         <div className="mt-3 flex flex-wrap gap-2">
           <a href="/api/export?format=json" className="btn-primary" download>
-            <FileJson size={16} /> Backup JSON (tudo)
+            <FileJson size={16} /> {t("acc.backupAll")}
           </a>
           {CSV_LINKS.map((l) => (
             <a key={l.href} href={l.href} className="btn-outline !px-3 !py-2 text-xs" download>
@@ -99,7 +102,7 @@ export default function AccountPanel({ email }: { email: string | null }) {
 
       <div className="mt-6 border-t border-slate-100 pt-5">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-          <Upload size={16} className="text-emerald-600 dark:text-emerald-400" /> Restaurar backup
+          <Upload size={16} className="text-emerald-600 dark:text-emerald-400" /> {t("acc.restore")}
         </h3>
         <p className="mt-1 text-xs text-slate-500">
           Importe um backup JSON exportado pelo FitVida. Registros são adicionados ao seu histórico (métricas do mesmo

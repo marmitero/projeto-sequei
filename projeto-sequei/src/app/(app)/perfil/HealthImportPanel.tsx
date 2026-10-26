@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+
 import { useState } from "react";
 import { HeartPulse, Upload } from "lucide-react";
 
@@ -9,6 +11,7 @@ import { HeartPulse, Upload } from "lucide-react";
  * - Google Fit: Takeout CSV de peso (ou planilha com colunas data + peso kg).
  */
 export default function HealthImportPanel() {
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState(false);
@@ -30,7 +33,7 @@ export default function HealthImportPanel() {
       }
     } catch {
       setErr(true);
-      setMsg("Falha no envio. Tente novamente.");
+      setMsg("health.sendFail");
     } finally {
       setBusy(false);
     }
@@ -39,13 +42,13 @@ export default function HealthImportPanel() {
   return (
     <div className="card p-5 sm:p-6">
       <h2 className="flex items-center gap-2 font-bold">
-        <HeartPulse size={18} className="text-emerald-600 dark:text-emerald-400" /> Importar dados de saúde
+        <HeartPulse size={18} className="text-emerald-600 dark:text-emerald-400" /> {t("health.title")}
       </h2>
       <p className="mt-1 text-sm text-slate-500">
-        Peso, % de gordura e sono de <b>Apple Health</b> (export.xml) ou <b>Google Fit</b> (CSV de peso do Takeout). Os registros entram nas Métricas por data.
+        {t("health.desc1")} <b>Apple Health</b> {t("health.desc2")} <b>Google Fit</b> {t("health.desc3")}
       </p>
       <label className={`btn-primary mt-3 inline-flex cursor-pointer ${busy ? "opacity-60" : ""}`}>
-        <Upload size={16} /> {busy ? "Importando..." : "Escolher arquivo"}
+        <Upload size={16} /> {busy ? "health.importing" : "health.chooseFile"}
         <input
           type="file"
           accept=".xml,.csv,text/xml,text/csv,application/xml"

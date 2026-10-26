@@ -1,25 +1,29 @@
+"use client";
+
 import { Flame, Trophy } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import type { Badge, Streaks } from "@/lib/gamification";
 
 /** Painel de sequências e marcos (gamificação) — apresentação pura. */
 export default function GamificationPanel({ streaks, badges, earned }: { streaks: Streaks; badges: Badge[]; earned: number }) {
+  const t = useT();
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
         <Trophy size={18} className="text-emerald-600 dark:text-emerald-400" />
-        <h2 className="text-xl font-bold">Sequências e marcos</h2>
+        <h2 className="text-xl font-bold">{t("game.title")}</h2>
         <span className="ml-auto rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-          {earned}/{badges.length} marcos
+          {earned}/{badges.length} {t("game.badges")}
         </span>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {(
           [
-            ["🍽️", "Diário", streaks.food, `recorde ${streaks.bestFood}`],
-            ["💧", "Água", streaks.water, "dias seguidos"],
-            ["💪", "Treino", streaks.workout, "dias seguidos"],
-            ["🔥", "Constância", Math.max(streaks.food, streaks.water), "melhor sequência ativa"],
+            ["🍽️", t("game.daily"), streaks.food, t("game.record", { n: streaks.bestFood })],
+            ["💧", t("nav.water"), streaks.water, t("game.dayStreak")],
+            ["💪", t("nav.workout"), streaks.workout, t("game.dayStreak")],
+            ["🔥", t("game.consistency"), Math.max(streaks.food, streaks.water), t("game.bestActive")],
           ] as const
         ).map(([icon, label, value, sub]) => (
           <div key={label} className="card p-4 text-center">
@@ -35,19 +39,23 @@ export default function GamificationPanel({ streaks, badges, earned }: { streaks
       </div>
 
       <div className="card p-4 sm:p-5">
-        <div className="mb-3 text-sm font-semibold text-slate-600 dark:text-slate-300">Conquistas</div>
+        <div className="mb-3 text-sm font-semibold text-slate-600 dark:text-slate-300">{t("game.achievements")}</div>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-5">
-          {badges.map((b) => (
-            <div
-              key={b.key}
-              title={b.desc}
-              className={`rounded-2xl border p-3 text-center transition ${b.earned ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-slate-50 opacity-70"}`}
-            >
-              <div className={`text-2xl ${b.earned ? "" : "grayscale"}`}>{b.icon}</div>
-              <div className="mt-1 truncate text-[11px] font-semibold">{b.label}</div>
-              <div className="text-[10px] text-slate-400">{b.progress}</div>
-            </div>
-          ))}
+          {badges.map((b) => {
+            const medal = ["🥉", "🥈", "🥇", "🏆"][Number(b.key.slice(-1)) - 1] ?? "⭐";
+            const unit = t(b.progressVars.unitKey);
+            return (
+              <div
+                key={b.key}
+                title={t(b.descKey, { target: b.progressVars.target, unit })}
+                className={`rounded-2xl border p-3 text-center transition ${b.earned ? "border-emerald-300 bg-emerald-50" : "border-slate-200 bg-slate-50 opacity-70"}`}
+              >
+                <div className={`text-2xl ${b.earned ? "" : "grayscale"}`}>{b.icon}</div>
+                <div className="mt-1 truncate text-[11px] font-semibold">{medal} {t(b.labelKey)}</div>
+                <div className="text-[10px] text-slate-400">{t(b.progressKey, { ...b.progressVars, unit })}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

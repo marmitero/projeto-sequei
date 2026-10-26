@@ -20,7 +20,7 @@ export default function ResetButton() {
         });
       }}
     >
-      <Trash2 size={16} /> {pending ? "Apagando..." : "Apagar dados"}
+      <Trash2 size={16} /> {pending ? "reset.deleting" : "reset.delete"}
     </button>
   );
 }

@@ -1,15 +1,17 @@
 import { ChefHat } from "lucide-react";
+import { getT } from "@/lib/i18n-server";
 import { getContext, foodsOn, sumMacros } from "@/lib/data";
 import { PageHeader } from "@/components/ui";
 import RecipeBrowser from "./RecipeBrowser";
 
 export default async function ReceitasPage({ searchParams }: { searchParams: Promise<{ r?: string }> }) {
+  const t = await getT();
   const { user, profile, targets, today } = await getContext();
   const sp = await searchParams;
   const eaten = sumMacros(await foodsOn(user.id, today));
   return (
     <>
-      <PageHeader title="Receitas Low-Carb" subtitle="Pizza, sorvete, lanches e doces com macros calculados ingrediente por ingrediente (TACO)." icon={<ChefHat size={22} />} />
+      <PageHeader title={t("pages.recipes")} subtitle={t("pages.recipesSub")} icon={<ChefHat size={22} />} />
       <RecipeBrowser
         profile={profile}
         today={today}

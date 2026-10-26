@@ -6,14 +6,16 @@ import { progressionFor, type LoadPoint } from "@/lib/progression";
 import { formatDateBR } from "@/lib/calc";
 import type { WorkoutExercise } from "@/db/schema";
 import { logWorkout } from "@/app/actions";
+import { useT } from "@/lib/i18n";
 
 type Log = { id: number; date: string; title: string; kind: string; durationMin: number; kcal: number; effort: number; exercises: WorkoutExercise[]; notes: string };
 
 /** Gráfico simples de carga ao longo das sessões. */
 function LoadChart({ series }: { series: LoadPoint[] }) {
+  const t = useT();
   const pts = series.filter((p) => p.loadKg != null) as { date: string; loadKg: number }[];
   if (pts.length < 2) {
-    return <div className="rounded-2xl bg-slate-50 p-6 text-center text-sm text-slate-500">Registre a carga em pelo menos 2 sessões para ver o gráfico.</div>;
+    return <div className="rounded-2xl bg-slate-50 p-6 text-center text-sm text-slate-500">{t("prog.needData")}</div>;
   }
   const w = 560;
   const h = 180;
@@ -28,7 +30,7 @@ function LoadChart({ series }: { series: LoadPoint[] }) {
 
   return (
     <div className="rounded-2xl bg-slate-50 p-3">
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label="Carga por sessão">
+      <svg viewBox={`0 0 ${w} ${h}`} className="w-full" role="img" aria-label={t("prog.chartLabel")}>
         <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke="#cbd5e1" strokeWidth="1" />
         <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke="#cbd5e1" strokeWidth="1" />
         <path d={path} fill="none" stroke="#059669" strokeWidth="2.5" strokeLinejoin="round" />
@@ -49,6 +51,7 @@ function LoadChart({ series }: { series: LoadPoint[] }) {
 }
 
 export default function ProgressionPanel({ logs, today }: { logs: Log[]; today: string }) {
+  const t = useT();
   const names = useMemo(() => {
     const s = new Set<string>();
     for (const l of logs) for (const e of l.exercises) if (e.name) s.add(e.name);
@@ -65,9 +68,9 @@ export default function ProgressionPanel({ logs, today }: { logs: Log[]; today: 
     return (
       <div className="card p-5 sm:p-6">
         <h2 className="mb-2 flex items-center gap-2 font-bold">
-          <LineChart size={18} /> Progressão de força
+          <LineChart size={18} /> {t("prog.title")}
         </h2>
-        <p className="text-sm text-slate-500">Registre treinos com carga (ex.: “40 kg”) para acompanhar sua evolução por exercício.</p>
+        <p className="text-sm text-slate-500">{t("prog.emptyChart")}</p>
       </div>
     );
   }
@@ -79,9 +82,9 @@ export default function ProgressionPanel({ logs, today }: { logs: Log[]; today: 
     <div className="card p-5 sm:p-6">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="flex items-center gap-2 font-bold">
-          <LineChart size={18} className="text-emerald-600 dark:text-emerald-400" /> Progressão de força
+          <LineChart size={18} className="text-emerald-600 dark:text-emerald-400" /> {t("prog.title")}
         </h2>
-        <select className="input !w-auto !py-2 text-sm" value={selected} onChange={(e) => setName(e.target.value)} aria-label="Exercício">
+        <select className="input !w-auto !py-2 text-sm" value={selected} onChange={(e) => setName(e.target.value)} aria-label={t("prog.exercise")}>
           {names.map((n) => (
             <option key={n} value={n}>
               {n}
@@ -97,7 +100,7 @@ export default function ProgressionPanel({ logs, today }: { logs: Log[]; today: 
           <TrendingUp size={18} className="mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
           <div className="min-w-0 flex-1">
             <div className="text-sm font-semibold text-emerald-900">
-              Sugestão: {sug.action === "increase" ? "progredir carga" : sug.action === "maintain" ? "manter carga" : sug.action === "deload" ? "aliviar (deload)" : "sem sugestão ainda"}
+              Sugestão: {sug.action === "increase" ? "prog.increase" : sug.action === "maintain" ? "prog.maintain" : sug.action === "deload" ? "prog.deload" : "prog.none"}
             </div>
             <p className="mt-0.5 text-sm text-emerald-800 dark:text-emerald-300">{sug.text}</p>
           </div>
@@ -116,9 +119,9 @@ export default function ProgressionPanel({ logs, today }: { logs: Log[]; today: 
                   kcal: 0,
                   effort: sug.action === "increase" ? 8 : 7,
                   exercises: [{ name: selected, sets: 3, reps: "8-10", load: `${String(nextKg).replace(".", ",")} kg` }],
-                  notes: "Registrado pela sugestão de progressão.",
+                  notes: "prog.loggedBySuggestion",
                 });
-                setDoneMsg("Sessão registrada!");
+                setDoneMsg("prog.sessionLogged");
                 setTimeout(() => setDoneMsg(""), 1800);
               })
             }
@@ -129,13 +132,13 @@ export default function ProgressionPanel({ logs, today }: { logs: Log[]; today: 
       </div>
 
       <div className="mt-3">
-        <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Últimas sessões</div>
+        <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">{t("prog.lastSessions")}</div>
         <div className="divide-y divide-slate-100">
           {[...prog.series].reverse().slice(0, 5).map((p, i) => (
             <div key={p.date + i} className="flex items-center gap-3 py-2 text-sm">
               <Dumbbell size={14} className="text-slate-300" />
               <span className="w-24 text-slate-500">{formatDateBR(p.date, { day: "2-digit", month: "short" })}</span>
-              <span className="font-medium">{p.loadKg != null ? `${String(p.loadKg).replace(".", ",")} kg` : "sem carga"}</span>
+              <span className="font-medium">{p.loadKg != null ? `${String(p.loadKg).replace(".", ",")} kg` : "prog.noLoad"}</span>
               <span className="text-slate-500">
                 {p.sets}×{p.reps}
               </span>

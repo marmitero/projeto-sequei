@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { Moon, Sun } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 const KEY = "fitvida-theme";
 export type Theme = "light" | "dark";
@@ -38,6 +39,7 @@ function persist(theme: Theme) {
 /** Alterna claro/escuro e persiste a escolha (com fallback para o sistema). */
 export default function ThemeToggle({ className = "" }: { className?: string }) {
   const theme = useSyncExternalStore(subscribe, readTheme, () => "light" as Theme);
+  const t = useT();
 
   const toggle = () => {
     const next: Theme = theme === "dark" ? "light" : "dark";
@@ -49,8 +51,8 @@ export default function ThemeToggle({ className = "" }: { className?: string }) 
     <button
       onClick={toggle}
       className={`btn-ghost !p-2.5 ${className}`}
-      title={theme === "dark" ? "Mudar para modo claro" : "Mudar para modo escuro"}
-      aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}
+      title={theme === "dark" ? t("theme.toLight") : t("theme.toDark")}
+      aria-label={theme === "dark" ? t("theme.enableLight") : t("theme.enableDark")}
     >
       {theme === "dark" ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} />}
     </button>

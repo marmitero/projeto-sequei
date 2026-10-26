@@ -4,7 +4,9 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Search, ArrowUpDown, X, Scale3d, GitCompare } from "lucide-react";
 import { FOODS, FOOD_CATEGORIES, Food, foodAllowed, macrosFor, searchFoods } from "@/lib/foods";
 import type { Profile } from "@/lib/calc";
-import { MacroPills, fmt } from "@/components/ui";
+import { fmt } from "@/components/ui";
+import { useT } from "@/lib/i18n";
+import { MacroPills } from "@/components/Macros";
 
 type SortKey = "name" | "kcal" | "p" | "c" | "f" | "fib" | "dens";
 
@@ -20,15 +22,16 @@ function SortHead({ k, sort, onSort, children }: { k: SortKey; sort: SortKey; on
 
 function badges(f: Food) {
   const b: { l: string; c: string }[] = [];
-  if (f.kcal > 0 && (f.p * 4) / f.kcal >= 0.4 && f.p >= 8) b.push({ l: "Rico em proteína", c: "bg-rose-50 text-rose-700 dark:text-rose-300" });
-  if (f.c - f.fib <= 5 && f.kcal > 5) b.push({ l: "Low-carb", c: "bg-emerald-50 text-emerald-700 dark:text-emerald-300" });
-  if (f.fib >= 3) b.push({ l: "Fonte de fibras", c: "bg-lime-50 text-lime-700" });
+  if (f.kcal > 0 && (f.p * 4) / f.kcal >= 0.4 && f.p >= 8) b.push({ l: "table.tagProtein", c: "bg-rose-50 text-rose-700 dark:text-rose-300" });
+  if (f.c - f.fib <= 5 && f.kcal > 5) b.push({ l: "table.tagLowcarb", c: "bg-emerald-50 text-emerald-700 dark:text-emerald-300" });
+  if (f.fib >= 3) b.push({ l: "table.tagFiber", c: "bg-lime-50 text-lime-700" });
   if (f.gi) b.push({ l: `IG ${f.gi}`, c: f.gi === "alto" ? "bg-orange-50 text-orange-700" : "bg-slate-100 text-slate-600" });
-  if (f.sodium) b.push({ l: "Sódio alto", c: "bg-amber-50 text-amber-700 dark:text-amber-300" });
+  if (f.sodium) b.push({ l: "table.tagSodium", c: "bg-amber-50 text-amber-700 dark:text-amber-300" });
   return b;
 }
 
 export default function FoodTable({ profile }: { profile: Profile }) {
+  const t = useT();
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("");
   const [sort, setSort] = useState<SortKey>("name");
@@ -68,7 +71,7 @@ export default function FoodTable({ profile }: { profile: Profile }) {
           </div>
           <div className="flex items-center gap-2">
             <Scale3d size={18} className="text-slate-400" />
-            <span className="text-sm text-slate-500">Valores para</span>
+            <span className="text-sm text-slate-500">{t("table.valuesFor")}</span>
             <input type="number" className="input !w-24" value={grams} min={1} onChange={(e) => setGrams(Math.max(1, Number(e.target.value)))} />
             <span className="text-sm text-slate-500">g</span>
           </div>
@@ -76,7 +79,7 @@ export default function FoodTable({ profile }: { profile: Profile }) {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="scrollbar-none -mx-1 flex flex-1 gap-2 overflow-x-auto px-1">
             <button onClick={() => setCat("")} className={`shrink-0 ${!cat ? "chip-on" : "chip-off"}`}>
-              Todas
+              {t("table.all")}
             </button>
             {FOOD_CATEGORIES.map((c) => (
               <button key={c} onClick={() => setCat(c)} className={`shrink-0 ${cat === c ? "chip-on" : "chip-off"}`}>
@@ -85,7 +88,7 @@ export default function FoodTable({ profile }: { profile: Profile }) {
             ))}
           </div>
           <label className="flex shrink-0 cursor-pointer items-center gap-2 text-sm text-slate-600">
-            <input type="checkbox" className="h-4 w-4 accent-emerald-600" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} /> Só compatíveis comigo
+            <input type="checkbox" className="h-4 w-4 accent-emerald-600" checked={onlyMine} onChange={(e) => setOnlyMine(e.target.checked)} /> {t("table.onlyCompatible")}
           </label>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 md:hidden">
@@ -93,15 +96,15 @@ export default function FoodTable({ profile }: { profile: Profile }) {
           {(
             [
               ["name", "Nome"],
-              ["p", "Proteína"],
-              ["dens", "Proteína/kcal"],
-              ["c", "Carbo"],
+              ["p", "macro.protein"],
+              ["dens", "table.perKcal"],
+              ["c", "table.carbsShort"],
               ["kcal", "Kcal"],
-              ["fib", "Fibras"],
+              ["fib", "macro.fiber"],
             ] as [SortKey, string][]
           ).map(([k, l]) => (
             <button key={k} onClick={() => toggleSort(k)} className={sort === k ? "chip-on !py-1 !text-xs" : "chip-off !py-1 !text-xs"}>
-              {l}
+              {t(l)}
             </button>
           ))}
         </div>
@@ -114,7 +117,7 @@ export default function FoodTable({ profile }: { profile: Profile }) {
               <GitCompare size={18} className="text-emerald-600 dark:text-emerald-400" /> Comparando ({grams} g)
             </h3>
             <button className="text-sm text-slate-500" onClick={() => setCompare([])}>
-              Limpar
+              {t("table.clear")}
             </button>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -125,7 +128,7 @@ export default function FoodTable({ profile }: { profile: Profile }) {
                 <div key={f.key} className="rounded-2xl border border-slate-200 p-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="text-sm font-semibold">{f.name}</div>
-                    <button onClick={() => toggleCompare(f.key)} className="text-slate-400" aria-label="Remover">
+                    <button onClick={() => toggleCompare(f.key)} className="text-slate-400" aria-label={t("common.remove")}>
                       <X size={14} />
                     </button>
                   </div>
@@ -152,14 +155,14 @@ export default function FoodTable({ profile }: { profile: Profile }) {
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-white/95 dark:bg-slate-100/95 backdrop-blur">
               <tr className="border-b border-slate-100">
-                <SortHead k="name" sort={sort} onSort={toggleSort}>Alimento</SortHead>
-                <SortHead k="kcal" sort={sort} onSort={toggleSort}>Kcal</SortHead>
-                <SortHead k="p" sort={sort} onSort={toggleSort}>Prot.</SortHead>
-                <SortHead k="c" sort={sort} onSort={toggleSort}>Carbo</SortHead>
-                <SortHead k="f" sort={sort} onSort={toggleSort}>Gord.</SortHead>
-                <SortHead k="fib" sort={sort} onSort={toggleSort}>Fibra</SortHead>
-                <SortHead k="dens" sort={sort} onSort={toggleSort}>P/100kcal</SortHead>
-                <th className="px-2 py-3 text-xs font-semibold uppercase text-slate-500">Comparar</th>
+                <SortHead k="name" sort={sort} onSort={toggleSort}>{t("table.food")}</SortHead>
+                <SortHead k="kcal" sort={sort} onSort={toggleSort}>{t("table.kcal")}</SortHead>
+                <SortHead k="p" sort={sort} onSort={toggleSort}>{t("table.protein")}</SortHead>
+                <SortHead k="c" sort={sort} onSort={toggleSort}>{t("table.carbs")}</SortHead>
+                <SortHead k="f" sort={sort} onSort={toggleSort}>{t("table.fat")}</SortHead>
+                <SortHead k="fib" sort={sort} onSort={toggleSort}>{t("table.fiber")}</SortHead>
+                <SortHead k="dens" sort={sort} onSort={toggleSort}>{t("table.per100")}</SortHead>
+                <th className="px-2 py-3 text-xs font-semibold uppercase text-slate-500">{t("table.compare")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -174,7 +177,7 @@ export default function FoodTable({ profile }: { profile: Profile }) {
                         <span className="text-[11px] text-slate-400">{f.cat} · {f.src}</span>
                         {badges(f).map((b) => (
                           <span key={b.l} className={`rounded px-1.5 text-[10px] font-semibold ${b.c}`}>
-                            {b.l}
+                            {t(b.l)}
                           </span>
                         ))}
                       </div>
@@ -210,7 +213,7 @@ export default function FoodTable({ profile }: { profile: Profile }) {
                     {f.cat} · {f.portions[0].l} = {f.portions[0].g} g
                   </div>
                 </div>
-                <input type="checkbox" aria-label="Comparar" className="mt-1 h-4 w-4 accent-emerald-600" checked={compare.includes(f.key)} onChange={() => toggleCompare(f.key)} />
+                <input type="checkbox" aria-label={t("table.compare")} className="mt-1 h-4 w-4 accent-emerald-600" checked={compare.includes(f.key)} onChange={() => toggleCompare(f.key)} />
               </div>
               <div className="mt-2">
                 <MacroPills kcal={m.kcal} p={m.protein} c={m.carbs} f={m.fat} />
@@ -226,7 +229,7 @@ export default function FoodTable({ profile }: { profile: Profile }) {
           );
         })}
       </div>
-      <p className="text-center text-xs text-slate-400">Fonte: Tabela Brasileira de Composição de Alimentos (TACO 4ª ed., NEPA/UNICAMP) e USDA FoodData Central. Valores por 100 g, ajustados à porção escolhida.</p>
+      <p className="text-center text-xs text-slate-400">{t("table.source")}</p>
     </div>
   );
 }

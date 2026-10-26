@@ -14,20 +14,21 @@ export type Exercise = {
   tip: string;
 };
 
+// valores são chaves i18n (traduzir com t()).
 export const EQUIPMENT_LABELS: Record<string, string> = {
-  halteres: "Halteres",
-  elastico: "Elásticos / mini band",
-  barra_fixa: "Barra fixa",
-  kettlebell: "Kettlebell",
-  banco: "Banco / step",
+  halteres: "equip.halteres",
+  elastico: "equip.elastico",
+  barra_fixa: "equip.barra",
+  kettlebell: "equip.kettlebell",
+  banco: "equip.banco",
 };
 
 export const INJURY_LABELS: Record<string, string> = {
-  joelho: "Joelho",
-  lombar: "Lombar / coluna",
-  ombro: "Ombro",
-  punho: "Punho / cotovelo",
-  tornozelo: "Tornozelo",
+  joelho: "inj.joelho",
+  lombar: "inj.lombar",
+  ombro: "inj.ombro",
+  punho: "inj.punho",
+  tornozelo: "inj.tornozelo",
 };
 
 const E = (id: string, name: string, muscle: string, pattern: Pattern, equip: Equip[], level: 1 | 2 | 3, avoid: string[], tip: string): Exercise => ({ id, name, muscle, pattern, equip, level, avoid, tip });
@@ -102,14 +103,14 @@ export const EXERCISES: Exercise[] = [
 ];
 
 export const CARDIO: Record<string, { label: string; met: number; impact: "baixo" | "alto"; desc: string }> = {
-  caminhada: { label: "Caminhada rápida", met: 4.3, impact: "baixo", desc: "Ritmo em que dá para falar, mas não cantar" },
-  corrida: { label: "Corrida leve", met: 8.3, impact: "alto", desc: "Trote confortável (~8–9 km/h)" },
-  bike: { label: "Bicicleta / ergométrica", met: 6.8, impact: "baixo", desc: "Intensidade moderada" },
-  natacao: { label: "Natação", met: 7.0, impact: "baixo", desc: "Nado contínuo moderado" },
-  hiit: { label: "HIIT", met: 8.0, impact: "alto", desc: "30 s forte / 60 s leve" },
-  danca: { label: "Dança / aeróbico", met: 5.5, impact: "alto", desc: "Aula ou vídeo de dança" },
-  eliptico: { label: "Elíptico (transport)", met: 5.0, impact: "baixo", desc: "Sem impacto nas articulações" },
-  remo: { label: "Remo ergômetro", met: 7.0, impact: "baixo", desc: "Puxada com pernas + tronco" },
+  caminhada: { label: "cardio.caminhada", met: 4.3, impact: "baixo", desc: "cardioDesc.caminhada" },
+  corrida: { label: "cardio.corrida", met: 8.3, impact: "alto", desc: "cardioDesc.corrida" },
+  bike: { label: "cardio.bike", met: 6.8, impact: "baixo", desc: "cardioDesc.bike" },
+  natacao: { label: "cardio.natacao", met: 7.0, impact: "baixo", desc: "cardioDesc.natacao" },
+  hiit: { label: "cardio.hiit", met: 8.0, impact: "alto", desc: "cardioDesc.hiit" },
+  danca: { label: "cardio.danca", met: 5.5, impact: "alto", desc: "cardioDesc.danca" },
+  eliptico: { label: "cardio.eliptico", met: 5.0, impact: "baixo", desc: "cardioDesc.eliptico" },
+  remo: { label: "cardio.remo", met: 7.0, impact: "baixo", desc: "cardioDesc.remo" },
 };
 
 export const ACTIVITY_METS: { key: string; label: string; met: number; kind: string }[] = [
@@ -172,7 +173,7 @@ const WEEKDAY_SCHEDULES: Record<number, number[]> = {
   7: [1, 2, 3, 4, 5, 6, 0],
 };
 
-export const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+export const WEEKDAYS = ["day.sun", "day.mon", "day.tue", "day.wed", "day.thu", "day.fri", "day.sat"];
 
 export function availableEquipment(p: Profile): Equip[] {
   if (p.location === "academia") return ["none", "halteres", "barra", "maquina", "polia", "elastico", "barra_fixa", "kettlebell", "banco"];

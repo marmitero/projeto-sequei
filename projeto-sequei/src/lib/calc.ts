@@ -30,19 +30,21 @@ export type Profile = {
   timezone: string;
 };
 
+// label/desc são chaves i18n (traduzir com t()).
 export const ACTIVITY_FACTORS: Record<string, { f: number; label: string; desc: string }> = {
-  sedentario: { f: 1.2, label: "Sedentário", desc: "Trabalho sentado, pouco movimento no dia" },
-  leve: { f: 1.375, label: "Levemente ativo", desc: "Caminha um pouco, exercício 1–3x/semana" },
-  moderado: { f: 1.55, label: "Moderadamente ativo", desc: "Em pé boa parte do dia ou treino 3–5x/semana" },
-  intenso: { f: 1.725, label: "Muito ativo", desc: "Trabalho físico ou treino intenso 6–7x/semana" },
-  atleta: { f: 1.9, label: "Atleta", desc: "Treinos 2x/dia ou trabalho físico pesado" },
+  sedentario: { f: 1.2, label: "act.sedentario", desc: "actDesc.sedentario" },
+  leve: { f: 1.375, label: "act.leve", desc: "actDesc.leve" },
+  moderado: { f: 1.55, label: "act.moderado", desc: "actDesc.moderado" },
+  intenso: { f: 1.725, label: "act.intenso", desc: "actDesc.intenso" },
+  atleta: { f: 1.9, label: "act.atleta", desc: "actDesc.atleta" },
 };
 
+// label/desc são chaves i18n (traduzir com t()).
 export const GOALS: Record<string, { label: string; desc: string }> = {
-  perder: { label: "Emagrecer", desc: "Reduzir gordura corporal" },
-  manter: { label: "Manter", desc: "Saúde e manutenção do peso" },
-  ganhar: { label: "Ganhar massa", desc: "Hipertrofia com ganho de peso" },
-  recomp: { label: "Recomposição", desc: "Perder gordura e ganhar músculo" },
+  perder: { label: "goal.perder", desc: "goalDesc.perder" },
+  manter: { label: "goal.manter", desc: "goalDesc.manter" },
+  ganhar: { label: "goal.ganhar", desc: "goalDesc.ganhar" },
+  recomp: { label: "goal.recomp", desc: "goalDesc.recomp" },
 };
 
 export function ageFrom(birthDate: string) {
@@ -65,12 +67,12 @@ export function bmi(weightKg: number, heightCm: number) {
 }
 
 export function bmiClass(v: number) {
-  if (v < 18.5) return { label: "Abaixo do peso", color: "text-sky-600" };
-  if (v < 25) return { label: "Eutrófico", color: "text-emerald-600" };
-  if (v < 30) return { label: "Sobrepeso", color: "text-amber-600" };
-  if (v < 35) return { label: "Obesidade I", color: "text-orange-600" };
-  if (v < 40) return { label: "Obesidade II", color: "text-rose-600" };
-  return { label: "Obesidade III", color: "text-rose-700" };
+  if (v < 18.5) return { label: "bmi.under", color: "text-sky-600" };
+  if (v < 25) return { label: "bmi.normal", color: "text-emerald-600" };
+  if (v < 30) return { label: "bmi.over", color: "text-amber-600" };
+  if (v < 35) return { label: "bmi.ob1", color: "text-orange-600" };
+  if (v < 40) return { label: "bmi.ob2", color: "text-rose-600" };
+  return { label: "bmi.ob3", color: "text-rose-700" };
 }
 
 /** % de gordura pelo método da Marinha dos EUA (medidas em cm). */
@@ -107,8 +109,11 @@ export type Targets = {
   deltaKcal: number;
   weeklyChangeKg: number;
   proteinPerKg: number;
-  notes: string[];
+  notes: NoteMsg[];
 };
+
+/** Mensagem de nota com chave i18n. */
+export type NoteMsg = { key: string; vars?: Record<string, string | number> };
 
 export function computeTargets(p: Profile): Targets {
   const age = ageFrom(p.birthDate);
@@ -116,7 +121,7 @@ export function computeTargets(p: Profile): Targets {
   const factor = ACTIVITY_FACTORS[p.activityLevel]?.f ?? 1.375;
   const tdee = base * factor;
   const conditions = p.healthConditions;
-  const notes: string[] = [];
+  const notes: NoteMsg[] = [];
 
   // Ajuste calórico por objetivo e ritmo
   const paceMap: Record<string, number> = { leve: 0.1, moderado: 0.18, agressivo: 0.25 };
@@ -128,20 +133,20 @@ export function computeTargets(p: Profile): Targets {
 
   if (conditions.includes("gestante")) {
     delta = Math.max(delta, 0) + 300;
-    notes.push("Gestação: sem déficit calórico; acrescentamos ~300 kcal. Valide com seu obstetra/nutricionista.");
+    notes.push({ key: "note.gestante" });
   }
   if (conditions.includes("lactante")) {
     delta = Math.max(delta, 0) + 450;
-    notes.push("Amamentação: acrescentamos ~450 kcal e mais água para apoiar a produção de leite.");
+    notes.push({ key: "note.lactante" });
   }
 
   let kcal = tdee + delta;
   const floor = p.sex === "M" ? 1500 : 1200;
   if (kcal < floor) {
     kcal = floor;
-    notes.push(`Mantivemos a meta acima do mínimo seguro de ${floor} kcal.`);
+    notes.push({ key: "note.floor", vars: { floor } });
   }
-  if (kcal < base) notes.push("A meta está próxima da sua TMB — priorize proteína e sono para preservar massa magra.");
+  if (kcal < base) notes.push({ key: "note.nearBmr", vars: { b: Math.round(base) } });
 
   // Proteína (g/kg) — ISSN: 1.4–2.0 g/kg para quem treina
   let protPerKg = { perder: 2.0, manter: 1.6, ganhar: 1.8, recomp: 2.1 }[p.goal] ?? 1.6;
@@ -153,7 +158,7 @@ export function computeTargets(p: Profile): Targets {
   const refWeight = imc > 30 ? idealW + 0.25 * (p.weightKg - idealW) : p.weightKg;
   if (conditions.includes("renal")) {
     protPerKg = 0.8;
-    notes.push("Doença renal: proteína limitada a 0,8 g/kg. É indispensável acompanhamento médico.");
+    notes.push({ key: "note.renalProtein", vars: { v: 0.8 } });
   }
   const protein = Math.round(refWeight * protPerKg);
 
@@ -172,7 +177,7 @@ export function computeTargets(p: Profile): Targets {
     if (conditions.includes("diabetes")) {
       carbs = Math.min(carbs, Math.round((kcal * 0.4) / 4));
       fat = Math.round((kcal - protein * 4 - carbs * 4) / 9);
-      notes.push("Diabetes: carboidratos limitados a ~40% e priorizamos alimentos de baixo índice glicêmico.");
+      notes.push({ key: "note.diabetes" });
     }
   }
   if (carbs < 20) carbs = 20;
@@ -185,9 +190,9 @@ export function computeTargets(p: Profile): Targets {
   if (p.activityLevel === "intenso" || p.activityLevel === "atleta") water += 300;
   if (conditions.includes("gestante")) water += 300;
   if (conditions.includes("lactante")) water += 700;
-  if (conditions.includes("renal")) notes.push("Doença renal: a ingestão de líquidos deve ser definida pelo seu nefrologista.");
-  if (conditions.includes("hipertensao")) notes.push("Hipertensão: sinalizamos alimentos ricos em sódio e evitamos embutidos nas sugestões.");
-  if (conditions.includes("colesterol")) notes.push("Colesterol: priorizamos peixes, azeite e oleaginosas, reduzindo gordura saturada.");
+  if (conditions.includes("renal")) notes.push({ key: "note.renalWater" });
+  if (conditions.includes("hipertensao")) notes.push({ key: "note.hipertensao" });
+  if (conditions.includes("colesterol")) notes.push({ key: "note.colesterol" });
   water = Math.round(water / 50) * 50;
   const waterTrainingExtra = Math.round(((p.sessionMinutes / 60) * 500) / 50) * 50;
 
@@ -236,8 +241,10 @@ export function weekdayOf(date: string) {
   return new Date(date + "T12:00:00Z").getUTCDay(); // 0 = domingo
 }
 
-export function formatDateBR(date: string, opts: Intl.DateTimeFormatOptions = { day: "2-digit", month: "short" }) {
-  return new Date(date + "T12:00:00Z").toLocaleDateString("pt-BR", { ...opts, timeZone: "UTC" });
+export const LOCALE_TAGS: Record<string, string> = { pt: "pt-BR", en: "en-US", fr: "fr-FR", es: "es-ES", zh: "zh-CN" };
+
+export function formatDateBR(date: string, opts: Intl.DateTimeFormatOptions = { day: "2-digit", month: "short" }, locale: string = "pt") {
+  return new Date(date + "T12:00:00Z").toLocaleDateString(LOCALE_TAGS[locale] ?? "pt-BR", { ...opts, timeZone: "UTC" });
 }
 
 export function hashSeed(s: string) {
@@ -260,13 +267,14 @@ export function rng(seed: number) {
   };
 }
 
+// label é chave i18n (traduzir com t()).
 export const MEALS: Record<string, { label: string; emoji: string }> = {
-  cafe: { label: "Café da manhã", emoji: "☕" },
-  lanche_manha: { label: "Lanche da manhã", emoji: "🍎" },
-  almoco: { label: "Almoço", emoji: "🍽️" },
-  lanche_tarde: { label: "Lanche da tarde", emoji: "🥤" },
-  jantar: { label: "Jantar", emoji: "🌙" },
-  ceia: { label: "Ceia", emoji: "🫖" },
+  cafe: { label: "meal.cafe", emoji: "☕" },
+  lanche_manha: { label: "meal.lancheManha", emoji: "🍎" },
+  almoco: { label: "meal.almoco", emoji: "🍽️" },
+  lanche_tarde: { label: "meal.lancheTarde", emoji: "🥤" },
+  jantar: { label: "meal.jantar", emoji: "🌙" },
+  ceia: { label: "meal.ceia", emoji: "🫖" },
 };
 
 export function mealsFor(n: number): string[] {
@@ -276,19 +284,20 @@ export function mealsFor(n: number): string[] {
   return ["cafe", "lanche_manha", "almoco", "lanche_tarde", "jantar", "ceia"];
 }
 
-export function personalTips(p: Profile, t: Targets): string[] {
-  const tips: string[] = [];
+export function personalTips(p: Profile, t: Targets): NoteMsg[] {
+  const tips: NoteMsg[] = [];
   const age = ageFrom(p.birthDate);
-  if (p.goal === "perder") tips.push(`Déficit de ~${Math.abs(t.deltaKcal)} kcal/dia → cerca de ${Math.abs(t.weeklyChangeKg).toString().replace(".", ",")} kg por semana.`);
-  if (p.goal === "ganhar") tips.push(`Superávit de ~${t.deltaKcal} kcal/dia: ganho estimado de ${t.weeklyChangeKg.toString().replace(".", ",")} kg/semana, com foco em massa magra.`);
-  if (p.goal === "recomp") tips.push("Recomposição: déficit leve + proteína alta + treino de força progressivo.");
-  tips.push(`Distribua ~${Math.round(t.protein / Math.max(p.mealsPerDay, 3))} g de proteína em cada uma das suas ${p.mealsPerDay} refeições.`);
-  if (p.healthConditions.includes("diabetes")) tips.push("Combine carboidratos com proteína e fibras para reduzir picos glicêmicos.");
-  if (p.healthConditions.includes("hipotireoidismo")) tips.push("Tome a levotiroxina em jejum, 30–60 min antes do café, longe de cálcio e ferro.");
-  if (age >= 60) tips.push("Acima dos 60: treino de força e proteína em todas as refeições combatem a sarcopenia.");
-  if (p.injuries.length) tips.push("Seu treino exclui exercícios de alto risco para suas lesões informadas.");
-  if (p.carbApproach !== "equilibrado") tips.push("Na estratégia low-carb, priorize vegetais folhosos para garantir fibras.");
-  if (p.trainingTime === "manha") tips.push("Treina cedo? Um lanche leve com carboidrato 30–60 min antes ajuda o desempenho.");
-  if (p.trainingTime === "noite") tips.push("Treina à noite? Faça um jantar rico em proteína logo após o treino.");
+  const n1 = (x: number) => String(x).replace(".", ",");
+  if (p.goal === "perder") tips.push({ key: "tip.deficit", vars: { kcal: Math.abs(t.deltaKcal), kg: n1(Math.abs(t.weeklyChangeKg)) } });
+  if (p.goal === "ganhar") tips.push({ key: "tip.surplus", vars: { kcal: t.deltaKcal, kg: n1(t.weeklyChangeKg) } });
+  if (p.goal === "recomp") tips.push({ key: "tip.recomp" });
+  tips.push({ key: "tip.protein", vars: { perMeal: Math.round(t.protein / Math.max(p.mealsPerDay, 3)), meals: p.mealsPerDay } });
+  if (p.healthConditions.includes("diabetes")) tips.push({ key: "tip.diabetes" });
+  if (p.healthConditions.includes("hipotireoidismo")) tips.push({ key: "tip.thyroid" });
+  if (age >= 60) tips.push({ key: "tip.senior" });
+  if (p.injuries.length) tips.push({ key: "tip.injuries" });
+  if (p.carbApproach !== "equilibrado") tips.push({ key: "tip.lowcarb" });
+  if (p.trainingTime === "manha") tips.push({ key: "tip.morning" });
+  if (p.trainingTime === "noite") tips.push({ key: "tip.night" });
   return tips;
 }

@@ -3,27 +3,31 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
-import { Home, Utensils, Dumbbell, Droplets, LineChart, ChefHat, Table2, UserRound, Menu, X, Leaf, ShoppingCart, Bell, Users } from "lucide-react";
+import { Home, Utensils, Dumbbell, Droplets, LineChart, ChefHat, Table2, UserRound, Menu, X, Leaf, ShoppingCart, Bell, Users, Users2 } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import LanguageToggle from "./LanguageToggle";
+import { useT } from "@/lib/i18n";
 import ReminderToggle from "./ReminderToggle";
 import type { ReminderInput } from "@/lib/reminders";
 
 const NAV = [
-  { href: "/", label: "Início", icon: Home },
-  { href: "/alimentacao", label: "Alimentação", icon: Utensils },
-  { href: "/compras", label: "Lista de Compras", icon: ShoppingCart },
-  { href: "/exercicios", label: "Treinos", icon: Dumbbell },
-  { href: "/hidratacao", label: "Hidratação", icon: Droplets },
-  { href: "/metricas", label: "Métricas", icon: LineChart },
-  { href: "/receitas", label: "Receitas Low-Carb", icon: ChefHat },
-  { href: "/comunidade", label: "Comunidade", icon: Users },
-  { href: "/tabela", label: "Tabela Nutricional", icon: Table2 },
-  { href: "/perfil", label: "Meu perfil", icon: UserRound },
+  { href: "/", labelKey: "nav.home", icon: Home },
+  { href: "/alimentacao", labelKey: "nav.food", icon: Utensils },
+  { href: "/compras", labelKey: "nav.shopping", icon: ShoppingCart },
+  { href: "/exercicios", labelKey: "nav.workout", icon: Dumbbell },
+  { href: "/hidratacao", labelKey: "nav.water", icon: Droplets },
+  { href: "/metricas", labelKey: "nav.metrics", icon: LineChart },
+  { href: "/receitas", labelKey: "nav.recipes", icon: ChefHat },
+  { href: "/comunidade", labelKey: "nav.community", icon: Users },
+  { href: "/familia", labelKey: "nav.family", icon: Users2 },
+  { href: "/tabela", labelKey: "nav.table", icon: Table2 },
+  { href: "/perfil", labelKey: "nav.profile", icon: UserRound },
 ];
 
 const MOBILE = ["/", "/alimentacao", "/exercicios", "/hidratacao"];
 
 export default function AppShell({ children, name, goal, reminders }: { children: ReactNode; name: string; goal: string; reminders?: ReminderInput }) {
+  const t = useT();
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const active = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
@@ -44,7 +48,7 @@ export default function AppShell({ children, name, goal, reminders }: { children
           </div>
           <div className="hidden lg:block">
             <div className="text-lg font-bold text-white">FitVida</div>
-            <div className="text-xs text-[#94a3b8]">Seu plano, do seu jeito</div>
+            <div className="text-xs text-[#94a3b8]">{t("nav.brandTag")}</div>
           </div>
         </Link>
         <nav className="flex flex-1 flex-col gap-1 px-3">
@@ -55,18 +59,19 @@ export default function AppShell({ children, name, goal, reminders }: { children
               <Link
                 key={n.href}
                 href={n.href}
-                title={n.label}
+                title={t(n.labelKey)}
                 className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition md:justify-center lg:justify-start ${
                   on ? "bg-emerald-500/15 text-emerald-300" : "hover:bg-white/5 dark:hover:bg-slate-100/5 hover:text-white"
                 }`}
               >
                 <Icon size={20} className="shrink-0" />
-                <span className="hidden lg:inline">{n.label}</span>
+                <span className="hidden lg:inline">{t(n.labelKey)}</span>
               </Link>
             );
           })}
         </nav>
         <div className="mx-3 mb-2 flex items-center gap-2 md:justify-center lg:justify-end">
+          <LanguageToggle />
           <ReminderToggle profile={reminders} />
           <ThemeToggle />
         </div>
@@ -74,7 +79,7 @@ export default function AppShell({ children, name, goal, reminders }: { children
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-500 text-sm font-bold text-white">{initials}</div>
           <div className="hidden min-w-0 lg:block">
             <div className="truncate text-sm font-semibold text-white">{name}</div>
-            <div className="truncate text-xs text-slate-400">{goal}</div>
+            <div className="truncate text-xs text-slate-400">{goal ? t(goal) : ""}</div>
           </div>
         </Link>
       </aside>
@@ -88,6 +93,7 @@ export default function AppShell({ children, name, goal, reminders }: { children
           <span className="font-bold">FitVida</span>
         </Link>
         <div className="flex items-center gap-1.5">
+          <LanguageToggle className="!p-2" />
           <ReminderToggle profile={reminders} className="!p-2" />
           <ThemeToggle className="!p-2" />
           <Link href="/perfil" className="grid h-8 w-8 place-items-center rounded-full bg-emerald-500 text-xs font-bold text-white">
@@ -109,13 +115,13 @@ export default function AppShell({ children, name, goal, reminders }: { children
             return (
               <Link key={n.href} href={n.href} className={`flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium ${on ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500"}`}>
                 <Icon size={22} />
-                {n.label.split(" ")[0]}
+                {t(n.labelKey).split(" ")[0]}
               </Link>
             );
           })}
           <button onClick={() => setOpen(true)} className={`flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium ${!MOBILE.some((m) => active(m)) ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500"}`}>
             <Menu size={22} />
-            Mais
+            {t("nav.more")}
           </button>
         </div>
       </nav>
@@ -125,8 +131,8 @@ export default function AppShell({ children, name, goal, reminders }: { children
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
           <div className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-white dark:bg-slate-100 p-5 pb-8 animate-fade-up" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <span className="font-bold">Mais opções</span>
-              <button onClick={() => setOpen(false)} className="btn-ghost !p-2" aria-label="Fechar">
+              <span className="font-bold">{t("nav.moreOptions")}</span>
+              <button onClick={() => setOpen(false)} className="btn-ghost !p-2" aria-label={t("nav.close")}>
                 <X size={18} />
               </button>
             </div>
@@ -136,7 +142,7 @@ export default function AppShell({ children, name, goal, reminders }: { children
                 return (
                   <Link key={n.href} href={n.href} onClick={() => setOpen(false)} className={`flex items-center gap-3 rounded-2xl border p-4 text-sm font-semibold ${active(n.href) ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:text-emerald-300" : "border-slate-200 text-slate-700"}`}>
                     <Icon size={20} />
-                    {n.label}
+                    {t(n.labelKey)}
                   </Link>
                 );
               })}

@@ -193,3 +193,14 @@ Regras do servidor (`addFoodEntries`): lote de até 30 itens, datas validadas, g
   - **Água** com média < 70% da meta (≥5 dias) → meta realista em passos de 250 ml (piso 1500 ml);
   - **Treino** < 50% do planejado → dica de constância.
 - "Aplicar ajuste" grava `users.target_overrides` (aplicado sobre `computeTargets` com pisos/tetos); "Restaurar metas automáticas" limpa tudo.
+
+## 13. i18n — pt, en, fr, es, zh (2026-10-26)
+
+Interface traduzida para **português (padrão), inglês, francês, espanhol e chinês mandarim**, sem mudar URLs.
+
+- **Infra**: `src/lib/i18n-core.ts` (puro: `DICTS`, `translate`, `tFor`, `isLocale`, `LOCALES`), `src/lib/i18n.tsx` (client: `I18nProvider`, `useT`, `useLocale`), `src/lib/i18n-server.ts` (`getT`, `getLocale` para componentes de servidor e server actions). Dicionários em `src/lib/messages/{pt,en,fr,es,zh}.ts`.
+- **Chaves** em `namespace.chave` (fonte da verdade: `pt.ts`, 637 chaves); interpolação `{{var}}`; chave desconhecida cai no próprio texto da chave; locale desconhecido cai em pt.
+- **Seleção de idioma**: cookie `fitvida-lang` (client-side, `LanguageToggle` no cabeçalho); padrão pt-BR preserva a UI e os testes existentes.
+- **Domínio traduz via chaves**: `GOALS`/`ACTIVITY_FACTORS`/`bmiClass` → `goal.*`/`act.*`/`bmi.*`; `targets.notes`/`personalTips` → `NoteMsg[] {key, vars}` (`note.*`/`tip.*`); `EQUIPMENT`/`INJURY`/`CARDIO`/`WEEKDAYS`/`MEALS` → `equip.*`/`inj.*`/`cardio.*`/`day.*`/`meal.*`; recomendações do coach → `coach.*` com `vars`; avisos de alimentos → `add.warn*`. `formatDateBR(date, opts, locale)` em `calc.ts` (`LOCALE_TAGS`).
+- **Limitações (decisão)**: conteúdo de catálogo e planos permanece **PT-BR** (nomes de alimentos/receitas/exercícios; títulos/foco/dicas de sessões em `exerciences.ts`/SPLITS); numérico `fmt` segue pt-BR; `lang` do `<html>` fixo em pt-BR.
+- **Testes**: `tests/unit/i18n.test.ts` (paridade exata de chaves, mesmas `{{vars}}`, sem valores vazios, `translate`); `tests/e2e/i18n.test.ts` (SSR nos 5 idiomas via cookie; dashboard traduz). Bateria: 70 unit + 60 e2e = 130/130.

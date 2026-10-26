@@ -1,4 +1,7 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { useT } from "@/lib/i18n";
 import { ArrowDownRight, ArrowUpRight, CalendarRange, Droplets, Dumbbell, Scale, Utensils } from "lucide-react";
 import { formatDateBR } from "@/lib/calc";
 import { pctDelta, type WeeklyReport } from "@/lib/weekly";
@@ -47,13 +50,14 @@ function TrendBars({ values, unit, fmtV }: { values: number[]; unit: string; fmt
 
 /** Relatório semanal + tendências (últimas 4 semanas). Componente puramente de apresentação. */
 export default function WeeklySection({ report }: { report: WeeklyReport }) {
+  const t = useT();
   const c = report.current;
   const p = report.previous;
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
         <CalendarRange size={18} className="text-emerald-600 dark:text-emerald-400" />
-        <h2 className="text-xl font-bold">Relatório semanal</h2>
+        <h2 className="text-xl font-bold">{t("week.title")}</h2>
         <span className="ml-auto text-xs text-slate-400">
           {formatDateBR(c.from, { day: "2-digit", month: "short" })} – {formatDateBR(c.to, { day: "2-digit", month: "short" })}
         </span>
@@ -62,20 +66,20 @@ export default function WeeklySection({ report }: { report: WeeklyReport }) {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           icon={<Utensils size={13} />}
-          label="Calorias/dia"
+          label="week.kcalDay"
           value={c.daysLogged ? String(c.avgKcal) : "—"}
           delta={<Delta cur={c.avgKcal} prev={p.avgKcal} unit="vs. sem. ant." invert />}
         />
         <StatCard
           icon={<Dumbbell size={13} />}
-          label="Treinos"
+          label="week.workouts"
           value={String(c.workouts)}
           sub="na semana"
           delta={<Delta cur={c.workouts} prev={p.workouts} unit="vs. sem. ant." />}
         />
         <StatCard
           icon={<Droplets size={13} />}
-          label="Hidratação"
+          label="week.hydration"
           value={`${c.waterDays} dia${c.waterDays === 1 ? "" : "s"}`}
           sub={`${c.avgWater} ml/dia`}
         />
@@ -89,16 +93,16 @@ export default function WeeklySection({ report }: { report: WeeklyReport }) {
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="card p-4">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Tendência de calorias (4 semanas)</div>
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{t("week.trendKcal")}</div>
           <TrendBars values={report.trends.map((t) => t.avgKcal)} unit="kcal" fmtV={(n) => String(Math.round(n))} />
         </div>
         <div className="card p-4">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Tendência de treinos (4 semanas)</div>
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{t("week.trendWorkouts")}</div>
           <TrendBars values={report.trends.map((t) => t.workouts)} unit="treinos" fmtV={(n) => String(n)} />
         </div>
       </div>
 
-      {c.daysLogged === 0 && <p className="text-sm text-slate-500">Registre suas refeições para ver o relatório completo da semana.</p>}
+      {c.daysLogged === 0 && <p className="text-sm text-slate-500">{t("week.empty")}</p>}
     </section>
   );
 }

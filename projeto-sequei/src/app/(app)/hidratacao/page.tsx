@@ -1,4 +1,5 @@
 import { Droplets } from "lucide-react";
+import { getT } from "@/lib/i18n-server";
 import { getContext, waterBetween, workoutsBetween } from "@/lib/data";
 import { addDays, weekdayOf } from "@/lib/calc";
 import { generateWorkoutPlan } from "@/lib/exercises";
@@ -6,6 +7,7 @@ import { PageHeader } from "@/components/ui";
 import WaterTracker from "./WaterTracker";
 
 export default async function HidratacaoPage() {
+  const t = await getT();
   const { user, profile, targets, today } = await getContext();
   const from = addDays(today, -6);
   const [logs, workouts] = await Promise.all([waterBetween(user.id, from, today), workoutsBetween(user.id, today, today)]);
@@ -19,7 +21,7 @@ export default async function HidratacaoPage() {
 
   return (
     <>
-      <PageHeader title="Hidratação" subtitle="Meta calculada pelo seu peso, idade, clima, treino do dia e condições de saúde." icon={<Droplets size={22} />} />
+      <PageHeader title={t("nav.water")} subtitle={t("pages.waterSub")} icon={<Droplets size={22} />} />
       <WaterTracker
         today={today}
         goal={goal}

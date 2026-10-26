@@ -7,13 +7,17 @@ import { addDays, formatDateBR, mealsFor, MEALS, type Profile, type Targets } fr
 import { generateMealPlan } from "@/lib/mealplan";
 import { FOODS, foodAllowed, macrosFor, bestPortion } from "@/lib/foods";
 import { addFoodEntries, deleteFoodEntry, copyMeal } from "@/app/actions";
-import { Ring, MacroRow, MacroPills, fmt, Bar } from "@/components/ui";
+import { Ring, fmt, Bar } from "@/components/ui";
+import { MacroRow, MacroPills } from "@/components/Macros";
+import { useT, useLocale } from "@/lib/i18n";
 import AddFoodModal from "./AddFoodModal";
 
 type Entry = { id: number; meal: string; name: string; grams: number; portionLabel: string; kcal: number; protein: number; carbs: number; fat: number; fiber: number };
 
 export default function FoodDiary({ date, today, profile, targets, entries, seed }: { date: string; today: string; profile: Profile; targets: Targets; entries: Entry[]; seed: string }) {
   const router = useRouter();
+  const tr = useT();
+  const locale = useLocale();
   const [modal, setModal] = useState<string | null>(null);
   const [overrides, setOverrides] = useState<Record<string, number>>({});
   const [pending, start] = useTransition();
@@ -53,14 +57,14 @@ export default function FoodDiary({ date, today, profile, targets, entries, seed
     <div className="space-y-6">
       {/* Navegação de data */}
       <div className="card flex items-center justify-between p-2">
-        <button className="btn-ghost !p-2.5" onClick={() => go(addDays(date, -1))} aria-label="Dia anterior">
+        <button className="btn-ghost !p-2.5" onClick={() => go(addDays(date, -1))} aria-label={tr("food.prevDay")}>
           <ChevronLeft size={18} />
         </button>
         <div className="text-center">
-          <div className="font-bold capitalize">{date === today ? "Hoje" : formatDateBR(date, { weekday: "long" })}</div>
-          <div className="text-xs text-slate-500">{formatDateBR(date, { day: "numeric", month: "long", year: "numeric" })}</div>
+          <div className="font-bold capitalize">{date === today ? tr("common.today") : formatDateBR(date, { weekday: "long" }, locale)}</div>
+          <div className="text-xs text-slate-500">{formatDateBR(date, { day: "numeric", month: "long", year: "numeric" }, locale)}</div>
         </div>
-        <button className="btn-ghost !p-2.5" onClick={() => go(addDays(date, 1))} disabled={date >= today} aria-label="Próximo dia">
+        <button className="btn-ghost !p-2.5" onClick={() => go(addDays(date, 1))} disabled={date >= today} aria-label={tr("food.nextDay")}>
           <ChevronRight size={18} />
         </button>
       </div>
@@ -71,17 +75,17 @@ export default function FoodDiary({ date, today, profile, targets, entries, seed
           <Ring value={totals.kcal} max={targets.kcal} size={170} stroke={16}>
             <div>
               <div className="text-3xl font-bold tabular-nums">{fmt(totals.kcal)}</div>
-              <div className="text-xs text-slate-500">de {fmt(targets.kcal)} kcal</div>
+              <div className="text-xs text-slate-500">{tr("common.of")} {fmt(targets.kcal)} {tr("common.kcal")}</div>
             </div>
           </Ring>
           <div className="mt-3 text-sm text-slate-600">
             {targets.kcal - totals.kcal >= 0 ? (
               <>
-                Restam <b className="text-emerald-600 dark:text-emerald-400">{fmt(targets.kcal - totals.kcal)} kcal</b>
+                {tr("food.remaining")} <b className="text-emerald-600 dark:text-emerald-400">{fmt(targets.kcal - totals.kcal)} {tr("common.kcal")}</b>
               </>
             ) : (
               <>
-                <b className="text-rose-600 dark:text-rose-400">{fmt(totals.kcal - targets.kcal)} kcal</b> acima da meta
+                <b className="text-rose-600 dark:text-rose-400">{fmt(totals.kcal - targets.kcal)} {tr("common.kcal")}</b> {tr("food.overGoal")}
               </>
             )}
           </div>
@@ -114,7 +118,7 @@ export default function FoodDiary({ date, today, profile, targets, entries, seed
           <div className="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 text-white">
             <Zap size={18} />
             <div className="font-semibold">
-              Feche seu dia: faltam {fmt(Math.max(closers.rem[closers.focus], 0))} g de {{ protein: "proteína", carbs: "carboidrato", fat: "gordura" }[closers.focus]}
+              {tr("food.closeDay", { n: fmt(Math.max(closers.rem[closers.focus], 0)) })} {{ protein: "proteína", carbs: "carboidrato", fat: "gordura" }[closers.focus]}
             </div>
           </div>
           <div className="scrollbar-none flex gap-3 overflow-x-auto p-4">
@@ -152,24 +156,24 @@ export default function FoodDiary({ date, today, profile, targets, entries, seed
                 <div className="flex items-center gap-2">
                   <span className="text-2xl">{MEALS[mk]?.emoji}</span>
                   <div>
-                    <div className="font-bold">{MEALS[mk]?.label}</div>
+                    <div className="font-bold">{tr(MEALS[mk]?.label ?? "")}</div>
                     <div className="text-xs text-slate-500">
-                      {fmt(t)} kcal {planMeal && `· meta ~${planMeal.target.kcal}`}
+                      {fmt(t)} {tr("common.kcal")} {planMeal && ` · ${tr("food.mealGoal", { kcal: planMeal.target.kcal })}`}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     className="btn-ghost !px-2.5 !py-2 text-slate-500"
-                    title="Repetir esta refeição de ontem"
-                    aria-label="Repetir de ontem"
+                    title={tr("food.repeatTitle")}
+                    aria-label={tr("food.repeatTitle")}
                     disabled={pending}
                     onClick={() => start(async () => { await copyMeal(addDays(date, -1), date, mk); })}
                   >
                     <Copy size={16} />
                   </button>
                   <button className="btn-primary !px-3 !py-2" onClick={() => setModal(mk)}>
-                    <Plus size={16} /> <span className="hidden sm:inline">Adicionar</span>
+                    <Plus size={16} /> <span className="hidden sm:inline">{tr("common.add")}</span>
                   </button>
                 </div>
               </div>
@@ -182,12 +186,12 @@ export default function FoodDiary({ date, today, profile, targets, entries, seed
                       <div className="text-xs text-slate-500">{e.portionLabel || `${fmt(e.grams)} g`}</div>
                     </div>
                     <MacroPills small kcal={e.kcal} p={e.protein} c={e.carbs} f={e.fat} />
-                    <button className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400" onClick={() => start(() => deleteFoodEntry(e.id))} aria-label="Remover">
+                    <button className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400" onClick={() => start(() => deleteFoodEntry(e.id))} aria-label={tr("common.remove")}>
                       <Trash2 size={15} />
                     </button>
                   </div>
                 ))}
-                {!list.length && <div className="py-3 text-sm text-slate-400">Nada registrado ainda.</div>}
+                {!list.length && <div className="py-3 text-sm text-slate-400">{tr("food.empty")}</div>}
               </div>
             </div>
           );
@@ -199,16 +203,16 @@ export default function FoodDiary({ date, today, profile, targets, entries, seed
         <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="flex items-center gap-2 text-xl font-bold">
-              <Sparkles size={20} className="text-emerald-600 dark:text-emerald-400" /> Cardápio sugerido para você
+              <Sparkles size={20} className="text-emerald-600 dark:text-emerald-400" /> {tr("food.suggestedMenu")}
             </h2>
             <p className="text-sm text-slate-500">
-              {profile.mealsPerDay} refeições · {targets.kcal} kcal · dieta {profile.diet}
+              {profile.mealsPerDay} {tr("food.menuSub", { meals: profile.mealsPerDay, kcal: targets.kcal, diet: tr("diet." + profile.diet) })}
               {profile.carbApproach !== "equilibrado" && ` · ${profile.carbApproach}`}
               {profile.restrictions.length > 0 && ` · sem ${profile.restrictions.join(", ").replace(/_/g, " ")}`}
             </p>
           </div>
           <div className="flex items-center gap-1 text-xs text-slate-500">
-            <Target size={14} /> Porções calculadas pela tabela TACO
+            <Target size={14} /> {tr("food.taco")}
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -217,13 +221,13 @@ export default function FoodDiary({ date, today, profile, targets, entries, seed
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="font-bold">
-                    {pm.emoji} {pm.label}
+                    {pm.emoji} {tr(pm.label)}
                   </div>
                   <div className="mt-1">
                     <MacroPills small kcal={pm.totals.kcal} p={pm.totals.protein} c={pm.totals.carbs} f={pm.totals.fat} />
                   </div>
                 </div>
-                <button className="btn-ghost !p-2" title="Trocar opções" onClick={() => setOverrides((o) => ({ ...o, [pm.meal]: (o[pm.meal] ?? 0) + 1 }))}>
+                <button className="btn-ghost !p-2" title={tr("food.swap")} onClick={() => setOverrides((o) => ({ ...o, [pm.meal]: (o[pm.meal] ?? 0) + 1 }))}>
                   <Shuffle size={16} />
                 </button>
               </div>
@@ -239,7 +243,7 @@ export default function FoodDiary({ date, today, profile, targets, entries, seed
                     <span className="shrink-0 text-xs font-semibold tabular-nums text-slate-500">{it.kcal} kcal</span>
                   </li>
                 ))}
-                {!pm.items.length && <li className="text-sm text-slate-400">Sem opções compatíveis — ajuste suas restrições no perfil.</li>}
+                {!pm.items.length && <li className="text-sm text-slate-400">{tr("food.noOptions")}</li>}
               </ul>
               <button
                 className="btn-outline w-full"
@@ -252,7 +256,7 @@ export default function FoodDiary({ date, today, profile, targets, entries, seed
                   });
                 }}
               >
-                <CheckCheck size={16} /> {busyMeal === pm.meal ? "Registrando..." : "Comi isso — registrar"}
+                <CheckCheck size={16} /> {busyMeal === pm.meal ? tr("food.logging") : tr("food.ateThis")}
               </button>
             </div>
           ))}

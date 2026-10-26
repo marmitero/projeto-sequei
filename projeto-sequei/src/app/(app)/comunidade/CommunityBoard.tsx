@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Heart, Plus, Trash2, X } from "lucide-react";
 import { submitCommunityRecipe, toggleCommunityLike, deleteCommunityRecipe } from "@/app/actions";
+import { useT } from "@/lib/i18n";
 
 type Recipe = {
   id: number;
@@ -26,6 +27,7 @@ const emptyForm = { name: "", description: "", ingredientsText: "", steps: "", t
 
 /** Galeria de receitas da comunidade: envio, curtida e exclusão. */
 export default function CommunityBoard({ recipes: initial }: { recipes: Recipe[] }) {
+  const t = useT();
   const [recipes, setRecipes] = useState(initial);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -50,7 +52,7 @@ export default function CommunityBoard({ recipes: initial }: { recipes: Recipe[]
     });
     setBusy(false);
     if (!r.ok || !r.id) {
-      setMsg(r.error ?? "Não foi possível enviar a receita.");
+      setMsg(r.error ?? "comm.submitError");
       return;
     }
     setRecipes([
@@ -90,9 +92,9 @@ export default function CommunityBoard({ recipes: initial }: { recipes: Recipe[]
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="text-sm text-slate-500">{recipes.length} receita(s) da comunidade</div>
+        <div className="text-sm text-slate-500">{recipes.length} {t("comm.count", { n: recipes.length })}</div>
         <button className="btn-primary" onClick={() => setOpen(true)}>
-          <Plus size={16} /> Enviar receita
+          <Plus size={16} /> {t("comm.submit")}
         </button>
       </div>
 
@@ -101,53 +103,53 @@ export default function CommunityBoard({ recipes: initial }: { recipes: Recipe[]
           <div className="absolute inset-0 bg-black/50" />
           <div className="card relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="font-bold">Enviar receita</h3>
-              <button className="btn-ghost !p-2" onClick={() => setOpen(false)} aria-label="Fechar">
+              <h3 className="font-bold">{t("comm.submit")}</h3>
+              <button className="btn-ghost !p-2" onClick={() => setOpen(false)} aria-label={t("common.close")}>
                 <X size={18} />
               </button>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="label">Nome *</label>
-                <input className="input" value={form.name} onChange={set("name")} placeholder="Ex.: Panqueca de banana proteica" />
+                <label className="label">{t("comm.name")}</label>
+                <input className="input" value={form.name} onChange={set("name")} placeholder={t("comm.namePh")} />
               </div>
               <div>
-                <label className="label">Descrição</label>
-                <input className="input" value={form.description} onChange={set("description")} placeholder="Uma linha sobre a receita" />
+                <label className="label">{t("comm.desc")}</label>
+                <input className="input" value={form.description} onChange={set("description")} placeholder={t("comm.descPh")} />
               </div>
               <div>
-                <label className="label">Ingredientes (um por linha: &quot;Item — 150 g&quot;)</label>
+                <label className="label">{t("comm.ingredients")}</label>
                 <textarea className="input min-h-24" value={form.ingredientsText} onChange={set("ingredientsText")} />
               </div>
               <div>
-                <label className="label">Modo de preparo</label>
+                <label className="label">{t("comm.steps")}</label>
                 <textarea className="input min-h-24" value={form.steps} onChange={set("steps")} />
               </div>
               <div>
-                <label className="label">Tags (separadas por vírgula)</label>
-                <input className="input" value={form.tagsText} onChange={set("tagsText")} placeholder="low-carb, jantar, 15 min" />
+                <label className="label">{t("comm.tags")}</label>
+                <input className="input" value={form.tagsText} onChange={set("tagsText")} placeholder={t("comm.tagsPh")} />
               </div>
               <div className="grid grid-cols-4 gap-2">
                 <div>
-                  <label className="label">kcal *</label>
+                  <label className="label">{t("common.kcal")} *</label>
                   <input className="input" inputMode="numeric" value={form.kcal} onChange={set("kcal")} />
                 </div>
                 <div>
-                  <label className="label">Prot (g)</label>
+                  <label className="label">{t("table.protein")} (g)</label>
                   <input className="input" inputMode="numeric" value={form.protein} onChange={set("protein")} />
                 </div>
                 <div>
-                  <label className="label">Carb (g)</label>
+                  <label className="label">{t("table.carbs")} (g)</label>
                   <input className="input" inputMode="numeric" value={form.carbs} onChange={set("carbs")} />
                 </div>
                 <div>
-                  <label className="label">Gord (g)</label>
+                  <label className="label">{t("table.fat")} (g)</label>
                   <input className="input" inputMode="numeric" value={form.fat} onChange={set("fat")} />
                 </div>
               </div>
               {msg && <p className="text-sm text-rose-600">{msg}</p>}
               <button className="btn-primary w-full" onClick={submit} disabled={busy}>
-                {busy ? "Enviando..." : "Publicar receita"}
+                {busy ? "photo.uploading" : "comm.publish"}
               </button>
             </div>
           </div>
@@ -161,10 +163,10 @@ export default function CommunityBoard({ recipes: initial }: { recipes: Recipe[]
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h3 className="font-bold leading-tight">{r.name}</h3>
-                  <div className="text-xs text-slate-400">por {r.author}</div>
+                  <div className="text-xs text-slate-400">{t("comm.by")} {r.author}</div>
                 </div>
                 {r.isMine && (
-                  <button className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600" onClick={() => remove(r.id)} aria-label="Excluir receita">
+                  <button className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600" onClick={() => remove(r.id)} aria-label={t("comm.delete")}>
                     <Trash2 size={15} />
                   </button>
                 )}
@@ -180,33 +182,33 @@ export default function CommunityBoard({ recipes: initial }: { recipes: Recipe[]
               <div className="mt-3 grid grid-cols-4 gap-1 text-center text-xs">
                 <div className="rounded-xl bg-slate-50 py-1.5 dark:bg-slate-100/5">
                   <div className="font-bold tabular-nums">{r.kcal}</div>
-                  <div className="text-[10px] text-slate-400">kcal</div>
+                  <div className="text-[10px] text-slate-400">{t("common.kcal")}</div>
                 </div>
                 <div className="rounded-xl bg-slate-50 py-1.5 dark:bg-slate-100/5">
                   <div className="font-bold tabular-nums">{r.protein}g</div>
-                  <div className="text-[10px] text-slate-400">prot</div>
+                  <div className="text-[10px] text-slate-400">{t("comm.p")}</div>
                 </div>
                 <div className="rounded-xl bg-slate-50 py-1.5 dark:bg-slate-100/5">
                   <div className="font-bold tabular-nums">{r.carbs}g</div>
-                  <div className="text-[10px] text-slate-400">carb</div>
+                  <div className="text-[10px] text-slate-400">{t("comm.c")}</div>
                 </div>
                 <div className="rounded-xl bg-slate-50 py-1.5 dark:bg-slate-100/5">
                   <div className="font-bold tabular-nums">{r.fat}g</div>
-                  <div className="text-[10px] text-slate-400">gord</div>
+                  <div className="text-[10px] text-slate-400">{t("comm.g")}</div>
                 </div>
               </div>
               <div className="mt-auto flex items-center justify-between pt-3">
-                <button className={`btn-ghost !px-3 !py-1.5 text-sm ${r.likedByMe ? "text-rose-600" : "text-slate-500"}`} onClick={() => like(r.id)} aria-label="Curtir">
+                <button className={`btn-ghost !px-3 !py-1.5 text-sm ${r.likedByMe ? "text-rose-600" : "text-slate-500"}`} onClick={() => like(r.id)} aria-label={t("comm.like")}>
                   <Heart size={16} fill={r.likedByMe ? "currentColor" : "none"} /> {r.likeCount}
                 </button>
-                {r.ingredients.length > 0 && <div className="text-[11px] text-slate-400">{r.ingredients.length} ingrediente(s)</div>}
+                {r.ingredients.length > 0 && <div className="text-[11px] text-slate-400">{r.ingredients.length} {t("comm.nIngredients", { n: r.ingredients.length })}</div>}
               </div>
             </article>
           ))}
         </div>
       ) : (
         <div className="card p-10 text-center text-sm text-slate-500">
-          Nenhuma receita ainda — seja o primeiro a compartilhar! 👩‍🍳
+          {t("comm.empty")}
         </div>
       )}
     </div>

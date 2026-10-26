@@ -234,3 +234,9 @@ Bateria final: **typecheck 0 · lint 0 · 121/121 testes** (63 unit + 58 e2e) ·
 - **SSR do React insere `<!-- -->`** entre texto e interpolações (`por {autor}` → `por <!-- -->Nome`) — asserts de `toContain` devem pegar só a interpolação ou um trecho sem mistura.
 - `npx vitest run -t "trecho"` **pula o `it` de setup** e deixa `cookie` vazio — rodar sempre o arquivo completo.
 - drizzle-orm 0.45: `workoutLogs.title` (não `name`); `createShare` precisa devolver `id` (revogação).
+
+## 16. Validação do i18n (2026-10-26)
+
+- `tests/unit/i18n.test.ts` (7): paridade exata de chaves entre os 5 dicionários, variáveis `{{var}}` idênticas, sem valores vazios, `translate` com interpolação e fallback, cobertura das chaves usadas.
+- `tests/e2e/i18n.test.ts` (2): `/onboarding` renderiza nos 5 idiomas conforme o cookie `fitvida-lang` (pt por padrão; cookie inválido cai no pt); dashboard autenticado traduz ("Peso atual" ↔ "Current weight" ↔ "当前体重").
+- Bateria completa: **70 unit + 60 e2e = 130/130** (os 121 testes anteriores permanecem verdes com o locale padrão pt-BR; textos PT da UI foram ajustados para os textos originais já cobertos pelos asserts).

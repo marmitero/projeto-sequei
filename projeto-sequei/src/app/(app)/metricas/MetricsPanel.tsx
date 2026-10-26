@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+
 import { useMemo, useState, useTransition } from "react";
 import { Save, Trash2, Scale, Ruler, Percent, HeartPulse, Moon, TrendingDown, TrendingUp, Target, CheckCircle2 } from "lucide-react";
 import { saveMetric, deleteMetric, type MetricInput } from "@/app/actions";
@@ -23,27 +25,27 @@ type M = {
 };
 
 const FIELDS: { k: keyof MetricInput; label: string; unit: string; step: string }[] = [
-  { k: "weightKg", label: "Peso", unit: "kg", step: "0.1" },
-  { k: "bodyFatPct", label: "% Gordura (bioimpedância)", unit: "%", step: "0.1" },
-  { k: "waistCm", label: "Cintura", unit: "cm", step: "0.5" },
-  { k: "hipCm", label: "Quadril", unit: "cm", step: "0.5" },
-  { k: "neckCm", label: "Pescoço", unit: "cm", step: "0.5" },
-  { k: "chestCm", label: "Peito", unit: "cm", step: "0.5" },
-  { k: "armCm", label: "Braço", unit: "cm", step: "0.5" },
-  { k: "thighCm", label: "Coxa", unit: "cm", step: "0.5" },
-  { k: "sleepHours", label: "Sono (última noite)", unit: "h", step: "0.5" },
-  { k: "restingHr", label: "FC repouso", unit: "bpm", step: "1" },
+  { k: "weightKg", label: "mp.weight", unit: "kg", step: "0.1" },
+  { k: "bodyFatPct", label: "mp.bodyFatBia", unit: "%", step: "0.1" },
+  { k: "waistCm", label: "mp.waist", unit: "cm", step: "0.5" },
+  { k: "hipCm", label: "mp.hip", unit: "cm", step: "0.5" },
+  { k: "neckCm", label: "mp.neck", unit: "cm", step: "0.5" },
+  { k: "chestCm", label: "mp.chest", unit: "cm", step: "0.5" },
+  { k: "armCm", label: "mp.arm", unit: "cm", step: "0.5" },
+  { k: "thighCm", label: "mp.thigh", unit: "cm", step: "0.5" },
+  { k: "sleepHours", label: "mp.sleep", unit: "h", step: "0.5" },
+  { k: "restingHr", label: "mp.hr", unit: "bpm", step: "1" },
 ];
 
 const CHARTS: { k: keyof M; label: string; color: string; unit: string }[] = [
-  { k: "weightKg", label: "Peso", color: "#8b5cf6", unit: " kg" },
-  { k: "bodyFatPct", label: "% Gordura", color: "#f43f5e", unit: "%" },
-  { k: "waistCm", label: "Cintura", color: "#f59e0b", unit: " cm" },
-  { k: "hipCm", label: "Quadril", color: "#ec4899", unit: " cm" },
-  { k: "armCm", label: "Braço", color: "#10b981", unit: " cm" },
-  { k: "thighCm", label: "Coxa", color: "#0ea5e9", unit: " cm" },
-  { k: "sleepHours", label: "Sono", color: "#6366f1", unit: " h" },
-  { k: "restingHr", label: "FC repouso", color: "#ef4444", unit: " bpm" },
+  { k: "weightKg", label: "mp.weight", color: "#8b5cf6", unit: " kg" },
+  { k: "bodyFatPct", label: "mp.bodyFat", color: "#f43f5e", unit: "%" },
+  { k: "waistCm", label: "mp.waist", color: "#f59e0b", unit: " cm" },
+  { k: "hipCm", label: "mp.hip", color: "#ec4899", unit: " cm" },
+  { k: "armCm", label: "mp.arm", color: "#10b981", unit: " cm" },
+  { k: "thighCm", label: "mp.thigh", color: "#0ea5e9", unit: " cm" },
+  { k: "sleepHours", label: "mp.sleepShort", color: "#6366f1", unit: " h" },
+  { k: "restingHr", label: "mp.hr", color: "#ef4444", unit: " bpm" },
 ];
 
 export default function MetricsPanel({
@@ -59,6 +61,7 @@ export default function MetricsPanel({
   adherence: { daysLogged: number; kcal: number; protein: number; waterDays: number; water: number; workouts: number };
   metrics: M[];
 }) {
+  const t = useT();
   const [date, setDate] = useState(today);
   const existing = metrics.find((m) => m.date === date);
   const blank = (m?: M) => Object.fromEntries(FIELDS.map((f) => [f.k, m && m[f.k as keyof M] != null ? String(m[f.k as keyof M]) : ""])) as Record<string, string>;
@@ -112,14 +115,14 @@ export default function MetricsPanel({
     if (profile.goal === "perder") {
       if (rate > 0.1) return "Peso subindo — revise a adesão ao cardápio e o registro das refeições.";
       if (rate < -weight * 0.01) return "Perda acima de 1% do peso/semana — considere aumentar um pouco as calorias para preservar músculo.";
-      return "Ritmo saudável de perda. Continue assim!";
+      return "mp.paceOk";
     }
     if (profile.goal === "ganhar") {
       if (rate < 0.05) return "Peso estável — adicione ~150 kcal por dia (ex.: 1 colher de pasta de amendoim + 1 banana).";
-      if (rate > 0.5) return "Ganho rápido — reduza ~150 kcal para minimizar gordura.";
-      return "Ganho controlado, ideal para hipertrofia.";
+      if (rate > 0.5) return "mp.paceFast";
+      return "mp.paceGain";
     }
-    return Math.abs(rate) < 0.25 ? "Peso estável — ótimo para manutenção/recomposição." : "Variação acima do esperado — confira medidas, não só a balança.";
+    return Math.abs(rate) < 0.25 ? "mp.paceStable" : "Variação acima do esperado — confira medidas, não só a balança.";
   })();
 
   const save = () =>
@@ -138,40 +141,40 @@ export default function MetricsPanel({
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Peso" value={`${fmt(weight, 1)} kg`} sub={rate !== null ? `${rate > 0 ? "+" : ""}${fmt(rate, 2)} kg/semana` : "sem tendência ainda"} icon={rate !== null && rate > 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />} tone="violet" />
-        <Stat label="IMC" value={fmt(imc, 1)} sub={<span className={bmiClass(imc).color}>{bmiClass(imc).label}</span>} icon={<Scale size={16} />} tone="sky" />
+        <Stat label="IMC" value={fmt(imc, 1)} sub={<span className={bmiClass(imc).color}>{t(bmiClass(imc).label)}</span>} icon={<Scale size={16} />} tone="sky" />
         <Stat label="% Gordura" value={bf ? `${fmt(bf, 1)}%` : "—"} sub={bf ? (bfReg ? "registrado" : "estimado (Marinha EUA)") : "informe cintura + pescoço" + (profile.sex === "F" ? " + quadril" : "")} icon={<Percent size={16} />} tone="rose" />
-        <Stat label="Massa magra" value={bf ? `${fmt(weight * (1 - bf / 100), 1)} kg` : "—"} sub={bf ? `gordura: ${fmt((weight * bf) / 100, 1)} kg` : "precisa do % gordura"} icon={<HeartPulse size={16} />} tone="emerald" />
+        <Stat label="mp.leanMass" value={bf ? `${fmt(weight * (1 - bf / 100), 1)} kg` : "—"} sub={bf ? `gordura: ${fmt((weight * bf) / 100, 1)} kg` : "precisa do % gordura"} icon={<HeartPulse size={16} />} tone="emerald" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Formulário */}
         <div className="card p-5 sm:p-6">
           <h2 className="mb-3 flex items-center gap-2 font-bold">
-            <Ruler size={18} className="text-emerald-600 dark:text-emerald-400" /> Registrar medidas
+            <Ruler size={18} className="text-emerald-600 dark:text-emerald-400" /> {t("mp.logMeasures")}
           </h2>
           <div className="mb-3">
-            <label className="label">Data</label>
+            <label className="label">{t("mp.date")}</label>
             <input type="date" className="input" value={date} max={today} onChange={(e) => changeDate(e.target.value)} />
-            {existing && <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">Já existe registro nesta data — salvar irá atualizar.</p>}
+            {existing && <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">{t("mp.dupeDate")}</p>}
           </div>
           <div className="grid grid-cols-2 gap-3">
             {FIELDS.map((f) => (
               <div key={f.k} className={f.k === "bodyFatPct" ? "col-span-2" : ""}>
                 <label className="label !normal-case !tracking-normal">
-                  {f.label} <span className="text-slate-400">({f.unit})</span>
+                  {t(f.label)} <span className="text-slate-400">({f.unit})</span>
                 </label>
                 <input type="number" inputMode="decimal" step={f.step} className="input" value={form[f.k as string]} onChange={(e) => setForm({ ...form, [f.k]: e.target.value })} />
               </div>
             ))}
           </div>
           <div className="mt-3">
-            <label className="label">Observações</label>
-            <input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Ex.: medido em jejum" />
+            <label className="label">{t("mp.notes")}</label>
+            <input className="input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("mp.notesPh")} />
           </div>
           <button className="btn-primary mt-4 w-full" disabled={pending} onClick={save}>
-            {saved ? <CheckCircle2 size={16} /> : <Save size={16} />} {pending ? "Salvando..." : saved ? "Salvo! Metas atualizadas" : "Salvar"}
+            {saved ? <CheckCircle2 size={16} /> : <Save size={16} />} {pending ? "mp.saving" : saved ? "mp.saved" : "common.save"}
           </button>
-          <p className="mt-2 text-xs text-slate-500">Dica: meça sempre pela manhã, em jejum, após ir ao banheiro.</p>
+          <p className="mt-2 text-xs text-slate-500">{t("mp.measureTip")}</p>
         </div>
 
         <div className="space-y-4 lg:col-span-2">
@@ -180,7 +183,7 @@ export default function MetricsPanel({
             <div className="scrollbar-none -mx-1 mb-3 flex gap-2 overflow-x-auto px-1">
               {CHARTS.map((c) => (
                 <button key={c.k} onClick={() => setChart(c.k)} className={`shrink-0 ${chart === c.k ? "chip-on" : "chip-off"}`}>
-                  {c.label}
+                  {t(c.label)}
                 </button>
               ))}
             </div>
@@ -192,7 +195,7 @@ export default function MetricsPanel({
             {/* Progresso */}
             <div className="card p-5">
               <h3 className="mb-3 flex items-center gap-2 font-bold">
-                <Target size={18} className="text-violet-500" /> Rumo à meta
+                <Target size={18} className="text-violet-500" /> {t("mp.towardGoal")}
               </h3>
               <div className="mb-2 flex justify-between text-sm">
                 <span>{fmt(startW, 1)} kg</span>
@@ -203,11 +206,11 @@ export default function MetricsPanel({
               <p className="mt-2 text-xs text-slate-500">Faltam {fmt(Math.abs(profile.targetWeightKg - weight), 1)} kg.</p>
               <div className="mt-4 space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Relação cintura/quadril</span>
+                  <span className="text-slate-500">{t("mp.whr")}</span>
                   <b className={rcqRisk ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}>{rcq ? `${fmt(rcq, 2)} ${rcqRisk ? "· risco" : "· ok"}` : "—"}</b>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Relação cintura/altura</span>
+                  <span className="text-slate-500">{t("mp.whtr")}</span>
                   <b className={rca && rca >= 0.5 ? "text-rose-600 dark:text-rose-400" : "text-emerald-600 dark:text-emerald-400"}>{rca ? `${fmt(rca, 2)} ${rca >= 0.5 ? "· acima de 0,5" : "· ok"}` : "—"}</b>
                 </div>
               </div>
@@ -215,19 +218,19 @@ export default function MetricsPanel({
             {/* Adesão */}
             <div className="card p-5">
               <h3 className="mb-3 flex items-center gap-2 font-bold">
-                <Moon size={18} className="text-indigo-500" /> Adesão (14 dias)
+                <Moon size={18} className="text-indigo-500" /> {t("mp.adherence")}
               </h3>
               <div className="space-y-3 text-sm">
                 <div>
                   <div className="mb-1 flex justify-between">
-                    <span className="text-slate-500">Dias com refeições registradas</span>
+                    <span className="text-slate-500">{t("mp.daysLogged")}</span>
                     <b>{adherence.daysLogged}/14</b>
                   </div>
                   <Bar value={adherence.daysLogged} max={14} />
                 </div>
                 <div>
                   <div className="mb-1 flex justify-between">
-                    <span className="text-slate-500">Média calórica</span>
+                    <span className="text-slate-500">{t("mp.avgKcal")}</span>
                     <b>
                       {fmt(adherence.kcal)} / {targets.kcal}
                     </b>
@@ -236,7 +239,7 @@ export default function MetricsPanel({
                 </div>
                 <div>
                   <div className="mb-1 flex justify-between">
-                    <span className="text-slate-500">Média de proteína</span>
+                    <span className="text-slate-500">{t("mp.avgProtein")}</span>
                     <b>
                       {fmt(adherence.protein)} / {targets.protein} g
                     </b>
@@ -245,7 +248,7 @@ export default function MetricsPanel({
                 </div>
                 <div>
                   <div className="mb-1 flex justify-between">
-                    <span className="text-slate-500">Água média</span>
+                    <span className="text-slate-500">{t("mp.avgWater")}</span>
                     <b>
                       {fmt(adherence.water)} / {targets.water} ml
                     </b>
@@ -253,7 +256,7 @@ export default function MetricsPanel({
                   <Bar value={adherence.water} max={targets.water} color="bg-cyan-500" />
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Treinos</span>
+                  <span className="text-slate-500">{t("mp.workouts")}</span>
                   <b>
                     {adherence.workouts} / {profile.trainingDays * 2}
                   </b>
@@ -266,20 +269,20 @@ export default function MetricsPanel({
 
       {/* Histórico */}
       <div className="card p-5 sm:p-6">
-        <h2 className="mb-3 font-bold">Histórico de medidas</h2>
+        <h2 className="mb-3 font-bold">{t("mp.history")}</h2>
         {metrics.length ? (
           <div className="-mx-5 overflow-x-auto px-5 sm:-mx-6 sm:px-6">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-slate-500">
-                  <th className="py-2">Data</th>
-                  <th>Peso</th>
-                  <th>% Gord.</th>
-                  <th>Cintura</th>
-                  <th>Quadril</th>
-                  <th>Braço</th>
-                  <th>Coxa</th>
-                  <th>Sono</th>
+                  <th className="py-2">{t("mp.date")}</th>
+                  <th>{t("mp.weight")}</th>
+                  <th>{t("mp.bodyFatShort")}</th>
+                  <th>{t("mp.waist")}</th>
+                  <th>{t("mp.hip")}</th>
+                  <th>{t("mp.arm")}</th>
+                  <th>{t("mp.thigh")}</th>
+                  <th>{t("mp.sleepShort")}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -295,7 +298,7 @@ export default function MetricsPanel({
                     <td>{m.thighCm ?? "—"}</td>
                     <td>{m.sleepHours ?? "—"}</td>
                     <td className="text-right">
-                      <button className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400" onClick={() => start(() => deleteMetric(m.id))} aria-label="Remover">
+                      <button className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400" onClick={() => start(() => deleteMetric(m.id))} aria-label={t("common.remove")}>
                         <Trash2 size={15} />
                       </button>
                     </td>
@@ -305,7 +308,7 @@ export default function MetricsPanel({
             </table>
           </div>
         ) : (
-          <Empty icon={<Ruler size={20} />} title="Nenhuma medida ainda" text="Comece registrando seu peso de hoje." />
+          <Empty icon={<Ruler size={20} />} title="mp.empty" text="mp.emptyHint" />
         )}
       </div>
     </div>

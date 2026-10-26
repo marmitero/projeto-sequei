@@ -7,6 +7,7 @@ import { saveProfile } from "@/app/actions";
 import { persistAuthCookies } from "@/lib/clientCookies";
 import { ACTIVITY_FACTORS, GOALS, ageFrom, bmi, bmiClass, computeTargets, weeksToGoal, type Profile } from "@/lib/calc";
 import { CARDIO, EQUIPMENT_LABELS, INJURY_LABELS } from "@/lib/exercises";
+import { useT, type TFn } from "@/lib/i18n";
 
 const DEFAULT: Profile = {
   name: "",
@@ -38,26 +39,27 @@ const DEFAULT: Profile = {
   timezone: "America/Sao_Paulo",
 };
 
-const STEPS = ["Sobre você", "Objetivo", "Rotina", "Treino", "Alimentação", "Saúde e resumo"];
+const STEP_KEYS = ["wiz.step1", "wiz.step2", "wiz.step3", "wiz.step4", "wiz.step5", "wiz.step6"];
+const STEP_DESC_KEYS = ["wiz.desc1", "wiz.desc2", "wiz.desc3", "wiz.desc4", "wiz.desc5", "wiz.desc6"];
 
 const RESTRICTIONS: Record<string, string> = {
-  lactose: "Lactose",
-  gluten: "Glúten",
-  oleaginosas: "Oleaginosas",
-  amendoim: "Amendoim",
-  ovo: "Ovo",
-  frutos_do_mar: "Frutos do mar / peixe",
-  soja: "Soja",
+  lactose: "wiz.restr.lactose",
+  gluten: "wiz.restr.gluten",
+  oleaginosas: "wiz.restr.oleaginosas",
+  amendoim: "wiz.restr.amendoim",
+  ovo: "wiz.restr.ovo",
+  frutos_do_mar: "wiz.restr.frutos",
+  soja: "wiz.restr.soja",
 };
 
 const CONDITIONS: Record<string, string> = {
-  diabetes: "Diabetes / pré-diabetes",
-  hipertensao: "Hipertensão",
-  colesterol: "Colesterol alto",
-  hipotireoidismo: "Hipotireoidismo",
-  renal: "Doença renal",
-  gestante: "Gestante",
-  lactante: "Amamentando",
+  diabetes: "wiz.cond.diabetes",
+  hipertensao: "wiz.cond.hipertensao",
+  colesterol: "wiz.cond.colesterol",
+  hipotireoidismo: "wiz.cond.hipotireoidismo",
+  renal: "wiz.cond.renal",
+  gestante: "wiz.cond.gestante",
+  lactante: "wiz.cond.lactante",
 };
 
 function Option({ on, onClick, title, desc, emoji }: { on: boolean; onClick: () => void; title: string; desc?: string; emoji?: string }) {
@@ -81,14 +83,15 @@ function Option({ on, onClick, title, desc, emoji }: { on: boolean; onClick: () 
   );
 }
 
-function Chips({ options, value, onChange }: { options: Record<string, string>; value: string[]; onChange: (v: string[]) => void }) {
+function Chips({ options, value, onChange, t }: { options: Record<string, string>; value: string[]; onChange: (v: string[]) => void; t: TFn }) {
+
   return (
     <div className="flex flex-wrap gap-2">
       {Object.entries(options).map(([k, l]) => {
         const on = value.includes(k);
         return (
           <button type="button" key={k} className={on ? "chip-on" : "chip-off"} onClick={() => onChange(on ? value.filter((x) => x !== k) : [...value, k])}>
-            {on && <Check size={14} />} {l}
+            {on && <Check size={14} />} {t(l)}
           </button>
         );
       })}
@@ -97,6 +100,7 @@ function Chips({ options, value, onChange }: { options: Record<string, string>; 
 }
 
 export default function ProfileWizard({ initial, mode }: { initial?: Profile; mode: "create" | "edit" }) {
+  const t = useT();
   const [p, setP] = useState<Profile>(initial ?? DEFAULT);
   const [step, setStep] = useState(0);
   const [agree, setAgree] = useState(mode === "edit");
@@ -129,7 +133,7 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
         router.push("/");
         router.refresh();
       } catch {
-        setError("Não foi possível salvar. Tente novamente.");
+        setError(t("wiz.saveError"));
       }
     });
   };
@@ -142,64 +146,55 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
             <Leaf size={22} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">Vamos montar seu plano</h1>
-            <p className="text-sm text-slate-500">Leva 2 minutos. Tudo no FitVida é calculado a partir das suas respostas.</p>
+            <h1 className="text-2xl font-bold">{t("wiz.title")}</h1>
+            <p className="text-sm text-slate-500">{t("wiz.subtitle")}</p>
           </div>
         </div>
       )}
 
       {/* Progresso */}
       <div className="mb-5 flex gap-1.5">
-        {STEPS.map((s, i) => (
+        {STEP_KEYS.map((s, i) => (
           <button key={s} type="button" onClick={() => i < step && setStep(i)} className="flex-1">
             <div className={`h-1.5 rounded-full transition ${i <= step ? "bg-emerald-500" : "bg-slate-200"}`} />
-            <div className={`mt-1.5 hidden text-left text-[11px] font-medium sm:block ${i === step ? "text-emerald-700 dark:text-emerald-300" : "text-slate-400"}`}>{s}</div>
+            <div className={`mt-1.5 hidden text-left text-[11px] font-medium sm:block ${i === step ? "text-emerald-700 dark:text-emerald-300" : "text-slate-400"}`}>{t(s)}</div>
           </button>
         ))}
       </div>
 
       <div className="card p-5 sm:p-7">
-        <h2 className="mb-1 text-lg font-bold">{STEPS[step]}</h2>
-        <p className="mb-5 text-sm text-slate-500">
-          {[
-            "Usamos esses dados na equação de Mifflin-St Jeor para estimar seu metabolismo.",
-            "Define o ajuste calórico e a distribuição de macronutrientes.",
-            "Seu nível de atividade e horários personalizam calorias e lembretes de água.",
-            "Montamos o treino com o que você tem disponível e respeitando lesões.",
-            "Cardápios e receitas só mostrarão alimentos compatíveis com você.",
-            "Condições de saúde ajustam metas e filtram alimentos e exercícios.",
-          ][step]}
-        </p>
+        <h2 className="mb-1 text-lg font-bold">{t(STEP_KEYS[step])}</h2>
+        <p className="mb-5 text-sm text-slate-500">{t(STEP_DESC_KEYS[step])}</p>
 
         {step === 0 && (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="label">Como podemos te chamar?</label>
-              <input className="input" value={p.name} onChange={(e) => set("name", e.target.value)} placeholder="Seu nome" />
+              <label className="label">{t("wiz.name")}</label>
+              <input className="input" value={p.name} onChange={(e) => set("name", e.target.value)} placeholder={t("wiz.namePh")} />
             </div>
             <div className="sm:col-span-2">
-              <label className="label">Sexo biológico</label>
+              <label className="label">{t("wiz.sex")}</label>
               <div className="grid grid-cols-2 gap-3">
-                <Option on={p.sex === "F"} onClick={() => set("sex", "F")} title="Feminino" emoji="♀️" />
-                <Option on={p.sex === "M"} onClick={() => set("sex", "M")} title="Masculino" emoji="♂️" />
+                <Option on={p.sex === "F"} onClick={() => set("sex", "F")} title={t("wiz.female")} emoji="♀️" />
+                <Option on={p.sex === "M"} onClick={() => set("sex", "M")} title={t("wiz.male")} emoji="♂️" />
               </div>
             </div>
             <div>
-              <label className="label">Data de nascimento</label>
+              <label className="label">{t("wiz.birth")}</label>
               <input type="date" className="input" value={p.birthDate} onChange={(e) => set("birthDate", e.target.value)} />
-              <p className="mt-1 text-xs text-slate-400">{age} anos</p>
+              <p className="mt-1 text-xs text-slate-400">{t("wiz.years", { n: age })}</p>
             </div>
             <div>
-              <label className="label">Altura (cm)</label>
+              <label className="label">{t("wiz.height")}</label>
               <input type="number" inputMode="decimal" className="input" value={p.heightCm} onChange={(e) => set("heightCm", Number(e.target.value))} />
             </div>
             <div>
-              <label className="label">Peso atual (kg)</label>
+              <label className="label">{t("wiz.weight")}</label>
               <input type="number" step="0.1" inputMode="decimal" className="input" value={p.weightKg} onChange={(e) => set("weightKg", Number(e.target.value))} />
             </div>
             <div className="flex items-end">
               <div className="w-full rounded-2xl bg-slate-50 p-3 text-sm">
-                IMC: <b>{imc.toFixed(1)}</b> <span className={bmiClass(imc).color}>· {bmiClass(imc).label}</span>
+                {t("dash.bmi")}: <b>{imc.toFixed(1)}</b> <span className={bmiClass(imc).color}>· {t(bmiClass(imc).label)}</span>
               </div>
             </div>
           </div>
@@ -209,21 +204,21 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
           <div className="space-y-5">
             <div className="grid gap-3 sm:grid-cols-2">
               {Object.entries(GOALS).map(([k, g]) => (
-                <Option key={k} on={p.goal === k} onClick={() => set("goal", k)} title={g.label} desc={g.desc} emoji={{ perder: "🔥", manter: "⚖️", ganhar: "💪", recomp: "🔁" }[k]} />
+                <Option key={k} on={p.goal === k} onClick={() => set("goal", k)} title={t(g.label)} desc={t(g.desc)} emoji={{ perder: "🔥", manter: "⚖️", ganhar: "💪", recomp: "🔁" }[k]} />
               ))}
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="label">Peso desejado (kg)</label>
+                <label className="label">{t("wiz.targetWeight")}</label>
                 <input type="number" step="0.1" className="input" value={p.targetWeightKg} onChange={(e) => set("targetWeightKg", Number(e.target.value))} />
               </div>
               {(p.goal === "perder" || p.goal === "ganhar") && (
                 <div>
-                  <label className="label">Ritmo</label>
+                  <label className="label">{t("wiz.pace")}</label>
                   <select className="input" value={p.pace} onChange={(e) => set("pace", e.target.value)}>
-                    <option value="leve">Leve — mais sustentável</option>
-                    <option value="moderado">Moderado — recomendado</option>
-                    <option value="agressivo">Acelerado — exige disciplina</option>
+                    <option value="leve">{t("wiz.paceLeve")}</option>
+                    <option value="moderado">{t("wiz.paceModerado")}</option>
+                    <option value="agressivo">{t("wiz.paceAgressivo")}</option>
                   </select>
                 </div>
               )}
@@ -235,32 +230,32 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
           <div className="space-y-5">
             <div className="grid gap-3">
               {Object.entries(ACTIVITY_FACTORS).map(([k, a]) => (
-                <Option key={k} on={p.activityLevel === k} onClick={() => set("activityLevel", k)} title={a.label} desc={a.desc} />
+                <Option key={k} on={p.activityLevel === k} onClick={() => set("activityLevel", k)} title={t(a.label)} desc={t(a.desc)} />
               ))}
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
-                <label className="label">Acorda às</label>
+                <label className="label">{t("wiz.wake")}</label>
                 <input type="time" className="input" value={p.wakeTime} onChange={(e) => set("wakeTime", e.target.value)} />
               </div>
               <div>
-                <label className="label">Dorme às</label>
+                <label className="label">{t("wiz.sleep")}</label>
                 <input type="time" className="input" value={p.sleepTime} onChange={(e) => set("sleepTime", e.target.value)} />
               </div>
               <div>
-                <label className="label">Treina de</label>
+                <label className="label">{t("wiz.trainAt")}</label>
                 <select className="input" value={p.trainingTime} onChange={(e) => set("trainingTime", e.target.value)}>
-                  <option value="manha">Manhã</option>
-                  <option value="tarde">Tarde</option>
-                  <option value="noite">Noite</option>
+                  <option value="manha">{t("daypart.morning")}</option>
+                  <option value="tarde">{t("daypart.afternoon")}</option>
+                  <option value="noite">{t("daypart.night")}</option>
                 </select>
               </div>
               <div>
-                <label className="label">Clima onde vive</label>
+                <label className="label">{t("wiz.climate")}</label>
                 <select className="input" value={p.climate} onChange={(e) => set("climate", e.target.value)}>
-                  <option value="quente">Quente</option>
-                  <option value="temperado">Ameno</option>
-                  <option value="frio">Frio</option>
+                  <option value="quente">{t("climate.hot")}</option>
+                  <option value="temperado">{t("climate.mild")}</option>
+                  <option value="frio">{t("climate.cold")}</option>
                 </select>
               </div>
             </div>
@@ -270,44 +265,44 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
         {step === 3 && (
           <div className="space-y-5">
             <div>
-              <label className="label">Experiência com treino</label>
+              <label className="label">{t("wiz.experience")}</label>
               <div className="grid gap-3 sm:grid-cols-3">
-                <Option on={p.experience === "iniciante"} onClick={() => set("experience", "iniciante")} title="Iniciante" desc="Menos de 6 meses" />
-                <Option on={p.experience === "intermediario"} onClick={() => set("experience", "intermediario")} title="Intermediário" desc="6 meses a 2 anos" />
-                <Option on={p.experience === "avancado"} onClick={() => set("experience", "avancado")} title="Avançado" desc="Mais de 2 anos" />
+                <Option on={p.experience === "iniciante"} onClick={() => set("experience", "iniciante")} title={t("exp.beginner")} desc={t("expDesc.beginner")} />
+                <Option on={p.experience === "intermediario"} onClick={() => set("experience", "intermediario")} title={t("exp.intermediate")} desc={t("expDesc.intermediate")} />
+                <Option on={p.experience === "avancado"} onClick={() => set("experience", "avancado")} title={t("exp.advanced")} desc={t("expDesc.advanced")} />
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="label">Dias por semana: {p.trainingDays}</label>
+                <label className="label">{t("wiz.daysPerWeek", { n: p.trainingDays })}</label>
                 <input type="range" min={1} max={7} value={p.trainingDays} onChange={(e) => set("trainingDays", Number(e.target.value))} className="w-full accent-emerald-600" />
               </div>
               <div>
-                <label className="label">Minutos por treino: {p.sessionMinutes}</label>
+                <label className="label">{t("wiz.minutesPerWorkout", { n: p.sessionMinutes })}</label>
                 <input type="range" min={20} max={120} step={5} value={p.sessionMinutes} onChange={(e) => set("sessionMinutes", Number(e.target.value))} className="w-full accent-emerald-600" />
               </div>
             </div>
             <div>
-              <label className="label">Onde você treina?</label>
+              <label className="label">{t("wiz.where")}</label>
               <div className="grid gap-3 sm:grid-cols-3">
-                <Option on={p.location === "academia"} onClick={() => set("location", "academia")} title="Academia" emoji="🏋️" />
-                <Option on={p.location === "casa"} onClick={() => set("location", "casa")} title="Em casa" emoji="🏠" />
-                <Option on={p.location === "ar_livre"} onClick={() => set("location", "ar_livre")} title="Ao ar livre" emoji="🌳" />
+                <Option on={p.location === "academia"} onClick={() => set("location", "academia")} title={t("loc.gym")} emoji="🏋️" />
+                <Option on={p.location === "casa"} onClick={() => set("location", "casa")} title={t("loc.home")} emoji="🏠" />
+                <Option on={p.location === "ar_livre"} onClick={() => set("location", "ar_livre")} title={t("loc.outdoor")} emoji="🌳" />
               </div>
             </div>
             {p.location !== "academia" && (
               <div>
-                <label className="label">Equipamentos disponíveis</label>
-                <Chips options={EQUIPMENT_LABELS} value={p.equipment} onChange={(v) => set("equipment", v)} />
+                <label className="label">{t("wiz.equipment")}</label>
+                <Chips t={t} options={EQUIPMENT_LABELS} value={p.equipment} onChange={(v) => set("equipment", v)} />
               </div>
             )}
             <div>
-              <label className="label">Cardio que você curte</label>
-              <Chips options={Object.fromEntries(Object.entries(CARDIO).map(([k, c]) => [k, c.label]))} value={p.cardioPrefs} onChange={(v) => set("cardioPrefs", v)} />
+              <label className="label">{t("wiz.cardio")}</label>
+              <Chips t={t} options={Object.fromEntries(Object.entries(CARDIO).map(([k, c]) => [k, c.label]))} value={p.cardioPrefs} onChange={(v) => set("cardioPrefs", v)} />
             </div>
             <div>
-              <label className="label">Lesões ou dores</label>
-              <Chips options={INJURY_LABELS} value={p.injuries} onChange={(v) => set("injuries", v)} />
+              <label className="label">{t("wiz.injuries")}</label>
+              <Chips t={t} options={INJURY_LABELS} value={p.injuries} onChange={(v) => set("injuries", v)} />
             </div>
           </div>
         )}
@@ -315,38 +310,38 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
         {step === 4 && (
           <div className="space-y-5">
             <div>
-              <label className="label">Padrão alimentar</label>
+              <label className="label">{t("wiz.diet")}</label>
               <div className="grid gap-3 sm:grid-cols-4">
                 {[
-                  ["onivoro", "Onívoro", "🍗"],
-                  ["pescetariano", "Pescetariano", "🐟"],
-                  ["vegetariano", "Vegetariano", "🥚"],
-                  ["vegano", "Vegano", "🌱"],
+                  ["onivoro", t("diet.omnivore"), "🍗"],
+                  ["pescetariano", t("diet.pescetarian"), "🐟"],
+                  ["vegetariano", t("diet.vegetarian"), "🥚"],
+                  ["vegano", t("diet.vegan"), "🌱"],
                 ].map(([k, l, e]) => (
                   <Option key={k} on={p.diet === k} onClick={() => set("diet", k)} title={l} emoji={e} />
                 ))}
               </div>
             </div>
             <div>
-              <label className="label">Estratégia de carboidratos</label>
+              <label className="label">{t("wiz.carb")}</label>
               <div className="grid gap-3 sm:grid-cols-3">
-                <Option on={p.carbApproach === "equilibrado"} onClick={() => set("carbApproach", "equilibrado")} title="Equilibrada" desc="45–55% carboidratos" />
-                <Option on={p.carbApproach === "lowcarb"} onClick={() => set("carbApproach", "lowcarb")} title="Low-carb" desc="Até ~20% / 130 g" />
-                <Option on={p.carbApproach === "cetogenica"} onClick={() => set("carbApproach", "cetogenica")} title="Cetogênica" desc="~30 g de carbo/dia" />
+                <Option on={p.carbApproach === "equilibrado"} onClick={() => set("carbApproach", "equilibrado")} title={t("carb.balanced")} desc={t("carbDesc.balanced")} />
+                <Option on={p.carbApproach === "lowcarb"} onClick={() => set("carbApproach", "lowcarb")} title={t("carb.lowcarb")} desc={t("carbDesc.lowcarb")} />
+                <Option on={p.carbApproach === "cetogenica"} onClick={() => set("carbApproach", "cetogenica")} title={t("carb.keto")} desc={t("carbDesc.keto")} />
               </div>
             </div>
             <div>
-              <label className="label">Refeições por dia: {p.mealsPerDay}</label>
+              <label className="label">{t("wiz.meals", { n: p.mealsPerDay })}</label>
               <input type="range" min={3} max={6} value={p.mealsPerDay} onChange={(e) => set("mealsPerDay", Number(e.target.value))} className="w-full accent-emerald-600" />
             </div>
             <div>
-              <label className="label">Alergias e intolerâncias</label>
-              <Chips options={RESTRICTIONS} value={p.restrictions} onChange={(v) => set("restrictions", v)} />
+              <label className="label">{t("wiz.restrictions")}</label>
+              <Chips t={t} options={RESTRICTIONS} value={p.restrictions} onChange={(v) => set("restrictions", v)} />
             </div>
             <div>
-              <label className="label">Alimentos que você não gosta</label>
-              <input className="input" value={p.dislikes} onChange={(e) => set("dislikes", e.target.value)} placeholder="Ex.: brócolis, fígado, beterraba" />
-              <p className="mt-1 text-xs text-slate-400">Separe por vírgulas. Eles nunca aparecerão nas sugestões.</p>
+              <label className="label">{t("wiz.dislikes")}</label>
+              <input className="input" value={p.dislikes} onChange={(e) => set("dislikes", e.target.value)} placeholder={t("wiz.dislikesPh")} />
+              <p className="mt-1 text-xs text-slate-400">{t("wiz.dislikesHelp")}</p>
             </div>
           </div>
         )}
@@ -354,24 +349,24 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
         {step === 5 && (
           <div className="space-y-5">
             <div>
-              <label className="label">Condições de saúde</label>
-              <Chips options={p.sex === "F" ? CONDITIONS : Object.fromEntries(Object.entries(CONDITIONS).filter(([k]) => k !== "gestante" && k !== "lactante"))} value={p.healthConditions} onChange={(v) => set("healthConditions", v)} />
+              <label className="label">{t("wiz.conditions")}</label>
+              <Chips t={t} options={p.sex === "F" ? CONDITIONS : Object.fromEntries(Object.entries(CONDITIONS).filter(([k]) => k !== "gestante" && k !== "lactante"))} value={p.healthConditions} onChange={(v) => set("healthConditions", v)} />
             </div>
 
             <div className="rounded-3xl bg-gradient-to-br from-[#0f172a] to-[#064e3b] p-5 text-white">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-emerald-300">
-                <Sparkles size={16} /> Seu plano personalizado
+                <Sparkles size={16} /> {t("wiz.yourPlan")}
               </div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {[
-                  ["Meta diária", `${targets.kcal} kcal`],
-                  ["Proteína", `${targets.protein} g`],
-                  ["Carboidrato", `${targets.carbs} g`],
-                  ["Gordura", `${targets.fat} g`],
-                  ["Água", `${(targets.water / 1000).toFixed(2).replace(".", ",")} L`],
-                  ["TMB", `${targets.bmr} kcal`],
-                  ["Gasto total", `${targets.tdee} kcal`],
-                  ["Previsão", weeks ? `~${weeks} semanas` : "Manutenção"],
+                  [t("wiz.dailyGoal"), `${targets.kcal} ${t("common.kcal")}`],
+                  [t("macro.protein"), `${targets.protein} ${t("common.grams")}`],
+                  [t("macro.carbs"), `${targets.carbs} ${t("common.grams")}`],
+                  [t("macro.fat"), `${targets.fat} ${t("common.grams")}`],
+                  [t("nav.water"), `${(targets.water / 1000).toFixed(2).replace(".", ",")} L`],
+                  [t("wiz.bmr"), `${targets.bmr} ${t("common.kcal")}`],
+                  [t("wiz.tdee"), `${targets.tdee} ${t("common.kcal")}`],
+                  [t("wiz.forecast"), weeks ? t("wiz.forecastWeeks", { n: weeks }) : t("wiz.maintenance")],
                 ].map(([l, v]) => (
                   <div key={l} className="rounded-2xl bg-white/10 dark:bg-slate-100/10 p-3">
                     <div className="text-[11px] uppercase tracking-wide text-emerald-200/80">{l}</div>
@@ -382,7 +377,7 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
               {targets.notes.length > 0 && (
                 <ul className="mt-4 space-y-1 text-xs text-emerald-100/90">
                   {targets.notes.map((n) => (
-                    <li key={n}>• {n}</li>
+                    <li key={n.key}>• {t(n.key, n.vars)}</li>
                   ))}
                 </ul>
               )}
@@ -392,7 +387,7 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
               <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 h-4 w-4 accent-emerald-600" />
               <span>
                 <ShieldAlert size={16} className="mr-1 inline" />
-                Entendo que o FitVida oferece estimativas educativas e não substitui o acompanhamento de médico, nutricionista ou educador físico.
+                {t("wiz.disclaimer")}
               </span>
             </label>
             {error && <p className="text-sm text-rose-600 dark:text-rose-400">{error}</p>}
@@ -401,15 +396,15 @@ export default function ProfileWizard({ initial, mode }: { initial?: Profile; mo
 
         <div className="mt-7 flex items-center justify-between gap-3">
           <button type="button" className="btn-ghost" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}>
-            <ArrowLeft size={16} /> Voltar
+            <ArrowLeft size={16} /> {t("wiz.back")}
           </button>
-          {step < STEPS.length - 1 ? (
+          {step < STEP_KEYS.length - 1 ? (
             <button type="button" className="btn-primary" disabled={!valid[step]} onClick={() => setStep((s) => s + 1)}>
-              Continuar <ArrowRight size={16} />
+              {t("wiz.next")} <ArrowRight size={16} />
             </button>
           ) : (
             <button type="button" className="btn-primary" disabled={!agree || pending} onClick={submit}>
-              {pending ? "Salvando..." : mode === "create" ? "Criar meu plano" : "Salvar alterações"} <Check size={16} />
+              {pending ? t("wiz.saving") : mode === "create" ? t("wiz.create") : t("wiz.saveChanges")} <Check size={16} />
             </button>
           )}
         </div>

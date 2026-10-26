@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+
 import { useMemo, useState, useTransition } from "react";
 import { Check, Clock, Flame, Info, Plus, RefreshCw, Trash2, X, Activity, Footprints, ShieldCheck, History } from "lucide-react";
 import { generateWorkoutPlan, kcalFromMet, ACTIVITY_METS, WEEKDAYS, INJURY_LABELS, type PlannedSession } from "@/lib/exercises";
@@ -14,6 +16,7 @@ type Log = { id: number; date: string; title: string; kind: string; durationMin:
 const SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 export default function WorkoutPlanner({ profile, today, logs }: { profile: Profile; today: string; logs: Log[] }) {
+  const t = useT();
   const [variant, setVariant] = useState(0);
   const plan = useMemo(() => generateWorkoutPlan(profile, variant), [profile, variant]);
   const wdToday = weekdayOf(today);
@@ -34,18 +37,18 @@ export default function WorkoutPlanner({ profile, today, logs }: { profile: Prof
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Treinos na semana" value={`${weekLogs.length}/${profile.trainingDays}`} icon={<Activity size={16} />} tone="amber" />
-        <Stat label="Minutos ativos" value={fmt(weekMin)} sub="meta OMS: 150+ min/sem" icon={<Clock size={16} />} tone="sky" />
-        <Stat label="Kcal gastas" value={fmt(weekKcal)} sub="nesta semana" icon={<Flame size={16} />} tone="rose" />
-        <Stat label="Divisão" value={profile.trainingDays <= 3 ? "Full body" : profile.trainingDays === 4 ? "Sup/Inf" : "PPL"} sub={`${profile.sessionMinutes} min/sessão`} icon={<Dumbbell2 />} tone="emerald" />
+        <Stat label="wp.weekWorkouts" value={`${weekLogs.length}/${profile.trainingDays}`} icon={<Activity size={16} />} tone="amber" />
+        <Stat label="wp.activeMinutes" value={fmt(weekMin)} sub="wp.whoGoal" icon={<Clock size={16} />} tone="sky" />
+        <Stat label="wp.kcalBurned" value={fmt(weekKcal)} sub="wp.thisWeek" icon={<Flame size={16} />} tone="rose" />
+        <Stat label="wp.split" value={profile.trainingDays <= 3 ? "wp.fullBody" : profile.trainingDays === 4 ? "wp.upperLower" : "PPL"} sub={`${profile.sessionMinutes} min/sessão`} icon={<Dumbbell2 />} tone="emerald" />
       </div>
 
       {/* Semana */}
       <div className="card p-4 sm:p-5">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-bold">Sua semana</h2>
+          <h2 className="font-bold">{t("wp.yourWeek")}</h2>
           <button className="btn-ghost !py-2 text-xs" onClick={() => setVariant((v) => v + 1)}>
-            <RefreshCw size={14} /> Gerar variação de exercícios
+            <RefreshCw size={14} /> {t("wp.shuffle")}
           </button>
         </div>
         <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
@@ -92,7 +95,7 @@ export default function WorkoutPlanner({ profile, today, logs }: { profile: Prof
                   </div>
                 </div>
                 <button className="btn-primary" onClick={() => setLogOpen({ session })}>
-                  <Check size={16} /> Registrar treino
+                  <Check size={16} /> {t("wp.logWorkout")}
                 </button>
               </div>
               {profile.injuries.length > 0 && (
@@ -102,7 +105,7 @@ export default function WorkoutPlanner({ profile, today, logs }: { profile: Prof
                 </div>
               )}
               <div className="mt-4 rounded-2xl bg-amber-50 p-3 text-sm text-amber-900 dark:text-amber-200">
-                <b>Aquecimento:</b> {session.warmup}
+                <b>{t("wp.warmup")}:</b> {session.warmup}
               </div>
               <ol className="mt-4 space-y-2">
                 {session.exercises.map((e, i) => (
@@ -149,14 +152,14 @@ export default function WorkoutPlanner({ profile, today, logs }: { profile: Prof
 
         <div className="space-y-4">
           <div className="card p-5">
-            <h3 className="mb-1 font-bold">Atividade avulsa</h3>
+            <h3 className="mb-1 font-bold">{t("wp.looseActivity")}</h3>
             <p className="mb-3 text-xs text-slate-500">Futebol, yoga, corrida... calculamos o gasto pelo seu peso ({profile.weightKg} kg).</p>
             <button className="btn-outline w-full" onClick={() => setLogOpen({ session: null })}>
-              <Plus size={16} /> Registrar atividade
+              <Plus size={16} /> {t("wp.logActivity")}
             </button>
           </div>
           <div className="card p-5">
-            <h3 className="mb-2 font-bold">Minutos nos últimos 7 dias</h3>
+            <h3 className="mb-2 font-bold">{t("wp.minutes7")}</h3>
             <BarChart data={minutesByDay} color="#fb923c" unit=" min" />
           </div>
         </div>
@@ -167,7 +170,7 @@ export default function WorkoutPlanner({ profile, today, logs }: { profile: Prof
       {/* Histórico */}
       <div className="card p-5 sm:p-6">
         <h2 className="mb-3 flex items-center gap-2 font-bold">
-          <History size={18} /> Histórico
+          <History size={18} /> {t("wp.history")}
         </h2>
         {logs.length ? (
           <div className="divide-y divide-slate-100">
@@ -175,21 +178,21 @@ export default function WorkoutPlanner({ profile, today, logs }: { profile: Prof
               <div key={l.id} className="flex items-center gap-3 py-3">
                 <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-orange-50 text-lg">{{ forca: "🏋️", cardio: "🏃", mobilidade: "🧘", esporte: "⚽" }[l.kind] ?? "💪"}</div>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold">{l.title}</div>
+                  <div className="truncate font-semibold">{t(l.title)}</div>
                   <div className="text-xs text-slate-500">
                     {formatDateBR(l.date, { weekday: "short", day: "2-digit", month: "short" })} · {l.durationMin} min · esforço {l.effort}/10
                     {l.exercises.length > 0 && ` · ${l.exercises.filter((e) => e.done !== false).length} exercícios`}
                   </div>
                 </div>
                 <div className="text-right text-sm font-bold text-orange-600">{fmt(l.kcal)} kcal</div>
-                <button className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400" disabled={pending} onClick={() => start(() => deleteWorkout(l.id))} aria-label="Remover">
+                <button className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:text-rose-400" disabled={pending} onClick={() => start(() => deleteWorkout(l.id))} aria-label={t("common.remove")}>
                   <Trash2 size={15} />
                 </button>
               </div>
             ))}
           </div>
         ) : (
-          <Empty icon={<Activity size={20} />} title="Nenhum treino registrado" text="Registre seu primeiro treino para acompanhar sua consistência." />
+          <Empty icon={<Activity size={20} />} title={t("wp.noWorkouts")} text="Registre seu primeiro treino para acompanhar sua consistência." />
         )}
       </div>
 
@@ -202,7 +205,8 @@ function Dumbbell2() {
   return <span className="text-sm">🏋️</span>;
 }
 
-function LogModal({ profile, today, session, onClose }: { profile: Profile; today: string; session: PlannedSession | null; onClose: () => void }) {
+function LogModal({ profile, today, session, onClose }: { profile: Profile; today: string; session: PlannedSession | null; onClose: () => void }) {  const t = useT();
+
   const [date, setDate] = useState(today);
   const [activity, setActivity] = useState(session ? (profile.goal === "perder" ? "musculacao_intensa" : "musculacao") : "caminhada");
   const [minutes, setMinutes] = useState(session?.minutes ?? 30);
@@ -226,24 +230,24 @@ function LogModal({ profile, today, session, onClose }: { profile: Profile; toda
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="relative flex max-h-[92vh] w-full max-w-xl flex-col overflow-hidden rounded-t-3xl bg-white dark:bg-slate-100 animate-fade-up sm:rounded-3xl">
         <div className="flex items-center justify-between border-b border-slate-100 p-4">
-          <div className="font-bold">{session ? `Registrar: ${session.title}` : "Registrar atividade"}</div>
-          <button className="btn-ghost !p-2" onClick={onClose} aria-label="Fechar">
+          <div className="font-bold">{session ? t("wp.logSession", { title: session.title }) : t("wp.logActivity")}</div>
+          <button className="btn-ghost !p-2" onClick={onClose} aria-label={t("common.close")}>
             <X size={18} />
           </button>
         </div>
         <div className="flex-1 space-y-4 overflow-y-auto p-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Data</label>
+              <label className="label">{t("mp.date")}</label>
               <input type="date" className="input" max={today} value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
             <div>
-              <label className="label">Duração (min)</label>
+              <label className="label">{t("wp.duration")}</label>
               <input type="number" className="input" value={minutes} onChange={(e) => setMinutes(Math.max(1, Number(e.target.value)))} />
             </div>
           </div>
           <div>
-            <label className="label">Tipo de atividade</label>
+            <label className="label">{t("wp.activityType")}</label>
             <select className="input" value={activity} onChange={(e) => setActivity(e.target.value)}>
               {ACTIVITY_METS.map((a) => (
                 <option key={a.key} value={a.key}>
@@ -258,11 +262,11 @@ function LogModal({ profile, today, session, onClose }: { profile: Profile; toda
           </div>
           {ex.length > 0 && (
             <div>
-              <label className="label">Exercícios e cargas</label>
+              <label className="label">{t("wp.exercisesLoads")}</label>
               <div className="space-y-2">
                 {ex.map((e, i) => (
                   <div key={i} className={`flex items-center gap-2 rounded-xl border p-2 ${e.done ? "border-emerald-200 bg-emerald-50/50" : "border-slate-200"}`}>
-                    <button onClick={() => setEx(ex.map((x, j) => (j === i ? { ...x, done: !x.done } : x)))} className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border ${e.done ? "border-emerald-500 bg-emerald-500 text-white" : "border-slate-300"}`} aria-label="Concluído">
+                    <button onClick={() => setEx(ex.map((x, j) => (j === i ? { ...x, done: !x.done } : x)))} className={`grid h-6 w-6 shrink-0 place-items-center rounded-md border ${e.done ? "border-emerald-500 bg-emerald-500 text-white" : "border-slate-300"}`} aria-label={t("wp.done")}>
                       {e.done && <Check size={14} />}
                     </button>
                     <div className="min-w-0 flex-1">
@@ -271,23 +275,23 @@ function LogModal({ profile, today, session, onClose }: { profile: Profile; toda
                         {e.sets} × {e.reps}
                       </div>
                     </div>
-                    <input className="input !w-24 !py-1.5 text-sm" placeholder="carga kg" value={e.load} onChange={(ev) => setEx(ex.map((x, j) => (j === i ? { ...x, load: ev.target.value } : x)))} />
+                    <input className="input !w-24 !py-1.5 text-sm" placeholder={t("wp.loadPh")} value={e.load} onChange={(ev) => setEx(ex.map((x, j) => (j === i ? { ...x, load: ev.target.value } : x)))} />
                   </div>
                 ))}
               </div>
             </div>
           )}
           <div>
-            <label className="label">Observações</label>
-            <textarea className="input" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Como se sentiu? Alguma dor?" />
+            <label className="label">{t("mp.notes")}</label>
+            <textarea className="input" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("wp.notesPh")} />
           </div>
         </div>
         <div className="border-t border-slate-100 p-4">
           <div className="mb-2 text-center text-sm text-slate-500">
-            Gasto estimado: <b className="text-orange-600">{kcal} kcal</b>
+            {t("wp.estBurn")}: <b className="text-orange-600">{kcal} {t("common.kcal")}</b>
           </div>
           <button className="btn-primary w-full !py-3" disabled={pending} onClick={save}>
-            {pending ? "Salvando..." : "Salvar treino"}
+            {pending ? "mp.saving" : "wp.saveWorkout"}
           </button>
         </div>
       </div>

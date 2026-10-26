@@ -27,8 +27,10 @@ export type CoachInput = {
 export type Recommendation = {
   key: string;
   area: "peso" | "kcal" | "agua" | "treino" | "hábito";
-  title: string;
-  detail: string;
+  /** Chaves i18n (traduzir com t()). */
+  titleKey: string;
+  detailKey: string;
+  vars?: Record<string, string | number>;
   /** Novo valor absoluto da meta, quando aplicável. */
   apply?: TargetOverrides;
 };
@@ -75,24 +77,27 @@ export function coachRecommendations(input: CoachInput): Recommendation[] {
       out.push({
         key: "peso-rapido",
         area: "peso",
-        title: "A evolução está mais rápida que o planejado",
-        detail: `Você está variando ${rate} kg/semana, contra a projeção de ${desired} kg/semana. Reduzir o déficit protege massa magra e energia — sugerimos +100 kcal na meta.`,
+        titleKey: "coach.pesoRapido",
+        detailKey: "coach.pesoRapidoDesc",
+        vars: { rate, desired },
         apply: { kcal: input.targets.kcal + 100 },
       });
     } else if (slower) {
       out.push({
         key: "peso-lento",
         area: "peso",
-        title: "A evolução está mais lenta que o planejado",
-        detail: `Você está variando ${rate} kg/semana, contra a projeção de ${desired} kg/semana. Um ajuste fino de −100 kcal na meta pode destravar o progresso.`,
+        titleKey: "coach.pesoLento",
+        detailKey: "coach.pesoLentoDesc",
+        vars: { rate, desired },
         apply: { kcal: input.targets.kcal - 100 },
       });
     } else {
       out.push({
         key: "peso-ok",
         area: "peso",
-        title: "Evolução dentro do planejado",
-        detail: `Variação de ${rate} kg/semana compatível com a projeção de ${desired} kg/semana. Mantenha a meta atual.`,
+        titleKey: "coach.pesoOk",
+        detailKey: "coach.pesoOkDesc",
+        vars: { rate, desired },
       });
     }
   }
@@ -103,8 +108,9 @@ export function coachRecommendations(input: CoachInput): Recommendation[] {
     out.push({
       key: "registro-baixo",
       area: "hábito",
-      title: "Registros irregulares",
-      detail: `Você registrou refeições em apenas ${logged.length} dos últimos ${days.length} dias (${Math.round(logRate * 100)}%). Registrar mesmo nos dias fora da dieta é o que dá precisão às metas — use "Repetir de ontem" para acelerar.`,
+      titleKey: "coach.registroBaixo",
+      detailKey: "coach.registroBaixoDesc",
+      vars: { n: logged.length, total: days.length, pct: Math.round(logRate * 100) },
     });
   }
 
@@ -117,16 +123,18 @@ export function coachRecommendations(input: CoachInput): Recommendation[] {
       out.push({
         key: "agua-real",
         area: "agua",
-        title: "A meta de água está acima da sua rotina",
-        detail: `Média de ${Math.round(waterAvg)} ml/dia contra a meta de ${input.targets.water} ml. Ajustar para ${realistic} ml (e subir aos poucos) costuma ser mais sustentável.`,
+        titleKey: "coach.aguaReal",
+        detailKey: "coach.aguaRealDesc",
+        vars: { avg: Math.round(waterAvg), goal: input.targets.water, realistic },
         apply: { water: realistic },
       });
     } else {
       out.push({
         key: "agua-dica",
         area: "agua",
-        title: "Hidratação abaixo do esperado",
-        detail: `Média de ${Math.round(waterAvg)} ml/dia contra a meta de ${input.targets.water} ml. Ative os lembretes (sino no topo) para espaçar os copos ao longo do dia.`,
+        titleKey: "coach.aguaDica",
+        detailKey: "coach.aguaDicaDesc",
+        vars: { avg: Math.round(waterAvg), goal: input.targets.water },
       });
     }
   }
@@ -139,8 +147,9 @@ export function coachRecommendations(input: CoachInput): Recommendation[] {
     out.push({
       key: "treino-baixo",
       area: "treino",
-      title: "Treinos abaixo do planejado",
-      detail: `${done} de ${planned} sessões no período. Reduza a barreira: uma sessão curta (20 min) já mantém o hábito — o plano se adapta à sua rotina.`,
+      titleKey: "coach.treinoBaixo",
+      detailKey: "coach.treinoBaixoDesc",
+      vars: { done, planned },
     });
   }
 
@@ -148,8 +157,8 @@ export function coachRecommendations(input: CoachInput): Recommendation[] {
     out.push({
       key: "manter",
       area: "hábito",
-      title: "Tudo no ritmo — mantenha!",
-      detail: "Registro, hidratação, treinos e evolução de peso coerentes com o planejado. Nenhum ajuste necessário agora.",
+      titleKey: "coach.manter",
+      detailKey: "coach.manterDesc",
     });
   }
   return out;

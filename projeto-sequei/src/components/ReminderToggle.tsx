@@ -3,6 +3,7 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { Bell, BellOff, BellRing } from "lucide-react";
 import { buildReminderSchedule, dueSlots, type ReminderInput } from "@/lib/reminders";
+import { useT } from "@/lib/i18n";
 
 type RemState = "off" | "on" | "unsupported" | "denied";
 
@@ -27,6 +28,7 @@ function snapshot(): RemState {
  */
 export default function ReminderToggle({ profile, className = "" }: { profile?: ReminderInput; className?: string }) {
   const state = useSyncExternalStore(subscribe, snapshot, () => "off" as RemState);
+  const t = useT();
   const fired = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -40,7 +42,7 @@ export default function ReminderToggle({ profile, className = "" }: { profile?: 
         if (fired.current.has(key)) continue;
         fired.current.add(key);
         try {
-          new Notification("FitVida", { body: s.label, icon: "/icon.png", tag: key });
+          new Notification("FitVida", { body: t(s.kind === "agua" ? "reminders.water" : s.kind === "treino" ? "reminders.workout" : "reminders.weigh"), icon: "/icon.png", tag: key });
         } catch {
           /* navegador pode exigir ServiceWorkerRegistration.showNotification */
         }
@@ -62,7 +64,7 @@ export default function ReminderToggle({ profile, className = "" }: { profile?: 
       localStorage.setItem("fitvida-reminders", "on");
       emit();
       try {
-        new Notification("FitVida", { body: "Lembretes ativados! Vamos cuidar da sua rotina. 💪", icon: "/icon.png" });
+        new Notification("FitVida", { body: t("reminders.activatedToast"), icon: "/icon.png" });
       } catch {}
     } else {
       emit();
@@ -75,8 +77,8 @@ export default function ReminderToggle({ profile, className = "" }: { profile?: 
     <button
       onClick={onClick}
       className={`btn-ghost !p-2.5 ${className}`}
-      title={state === "on" ? "Lembretes ativados" : state === "denied" ? "Lembretes bloqueados no navegador" : "Ativar lembretes (água, treino, pesagem)"}
-      aria-label={state === "on" ? "Desativar lembretes" : "Ativar lembretes"}
+      title={state === "on" ? t("reminders.on") : state === "denied" ? t("reminders.blocked") : t("reminders.enable")}
+      aria-label={state === "on" ? t("reminders.disable") : t("reminders.enable")}
     >
       {state === "on" ? <BellRing size={18} className="text-emerald-600 dark:text-emerald-400" /> : state === "denied" ? <BellOff size={18} /> : <Bell size={18} />}
     </button>

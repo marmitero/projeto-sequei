@@ -27,6 +27,11 @@ export type Badge = {
   icon: string;
   earned: boolean;
   progress: string; // ex.: "4/7 dias"
+  /** Chaves i18n (label/desc/progress traduzidos na UI). */
+  labelKey: string;
+  descKey: string;
+  progressKey: string;
+  progressVars: { n: number; target: number; unitKey: string };
 };
 
 function addDaysISO(date: string, n: number) {
@@ -94,6 +99,10 @@ export function computeBadges(c: DailyCounts): Badge[] {
       desc: `${desc} (${s} ${unit})`,
       earned: n >= s,
       progress: `${Math.min(n, s)}/${s} ${unit}`,
+      labelKey: `game.badge.${key}`,
+      descKey: `game.badgeDesc.${key}`,
+      progressKey: "game.progress",
+      progressVars: { n: Math.min(n, s), target: s, unitKey: `game.unit.${key}` },
     }));
 
   return [

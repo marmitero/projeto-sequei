@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+
 import { useCallback, useSyncExternalStore } from "react";
 import { Check, ListChecks, RotateCcw } from "lucide-react";
 import type { ShoppingGroup } from "@/lib/shopping";
@@ -49,6 +51,7 @@ function writeSnapshot(key: string, ids: string[]) {
 }
 
 export default function ShoppingList({ groups, weekKey }: { groups: ShoppingGroup[]; weekKey: string }) {
+  const t = useT();
   const storageKey = `fitvida:compras:${weekKey}`;
   const raw = useSyncExternalStore(
     useCallback((cb: () => void) => subscribe(storageKey, cb), [storageKey]),
@@ -80,7 +83,7 @@ export default function ShoppingList({ groups, weekKey }: { groups: ShoppingGrou
           </div>
         </div>
         <button className="btn-ghost !py-2 text-xs" onClick={() => writeSnapshot(storageKey, [])}>
-          <RotateCcw size={14} /> Limpar marcações
+          <RotateCcw size={14} /> {t("shop.clearChecks")}
         </button>
       </div>
 

@@ -1,5 +1,6 @@
 import { Users } from "lucide-react";
 import { desc, eq, sql } from "drizzle-orm";
+import { getT } from "@/lib/i18n-server";
 import { db } from "@/db";
 import { communityRecipeLikes, communityRecipes } from "@/db/schema";
 import { getContext } from "@/lib/data";
@@ -9,6 +10,7 @@ import CommunityBoard from "./CommunityBoard";
 export const dynamic = "force-dynamic";
 
 export default async function ComunidadePage() {
+  const t = await getT();
   const { user } = await getContext();
   const [rows, likes, mine] = await Promise.all([
     db
@@ -39,7 +41,7 @@ export default async function ComunidadePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Comunidade FitVida" subtitle="Receitas da galera: compartilhe a sua e aprove as favoritas." icon={<Users size={22} />} />
+      <PageHeader title={t("pages.community")} subtitle={t("pages.communitySub")} icon={<Users size={22} />} />
       <CommunityBoard recipes={recipes} />
     </div>
   );

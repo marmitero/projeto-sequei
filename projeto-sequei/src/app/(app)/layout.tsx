@@ -14,7 +14,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <AppShell
       name={user.name}
-      goal={GOALS[user.goal]?.label ?? ""}
+      goal={GOALS[user.goal]?.label ?? ""} // chave i18n
       reminders={{
         wakeTime: user.wakeTime,
         sleepTime: user.sleepTime,

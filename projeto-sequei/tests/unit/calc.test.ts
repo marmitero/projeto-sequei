@@ -33,12 +33,12 @@ describe("calc", () => {
 
   it("IMC e classificação OMS", () => {
     expect(bmi(70, 170)).toBeCloseTo(24.22, 1);
-    expect(bmiClass(17).label).toBe("Abaixo do peso");
-    expect(bmiClass(24).label).toBe("Eutrófico");
-    expect(bmiClass(27).label).toBe("Sobrepeso");
-    expect(bmiClass(32).label).toBe("Obesidade I");
-    expect(bmiClass(37).label).toBe("Obesidade II");
-    expect(bmiClass(42).label).toBe("Obesidade III");
+    expect(bmiClass(17).label).toBe("bmi.under");
+    expect(bmiClass(24).label).toBe("bmi.normal");
+    expect(bmiClass(27).label).toBe("bmi.over");
+    expect(bmiClass(32).label).toBe("bmi.ob1");
+    expect(bmiClass(37).label).toBe("bmi.ob2");
+    expect(bmiClass(42).label).toBe("bmi.ob3");
   });
 
   it("% gordura Navy (M/F) e medidas faltando", () => {
@@ -75,7 +75,7 @@ describe("calc", () => {
   it("piso calórico seguro (1200 kcal F) com aviso", () => {
     const tg = computeTargets({ ...baseProfile, sex: "F", weightKg: 45, heightCm: 150, birthDate: "1990-01-01", activityLevel: "sedentario", pace: "agressivo" });
     expect(tg.kcal).toBeGreaterThanOrEqual(1200);
-    expect(tg.notes.some((n) => n.includes("mínimo seguro"))).toBe(true);
+    expect(tg.notes.some((n) => n.key === "note.floor")).toBe(true);
   });
 
   it("gestante/lactante nunca em déficit", () => {

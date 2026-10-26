@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+
 import { useState } from "react";
 import { Camera, Columns2, Trash2, Upload } from "lucide-react";
 
@@ -7,6 +9,7 @@ type PhotoMeta = { id: number; date: string; label: string; mime: string };
 
 /** Fotos de progresso: upload, galeria e comparação lado a lado. */
 export default function PhotosSection({ today, initialPhotos }: { today: string; initialPhotos: PhotoMeta[] }) {
+  const t = useT();
   const [photos, setPhotos] = useState<PhotoMeta[]>(initialPhotos);
   const [date, setDate] = useState(today);
   const [label, setLabel] = useState("");
@@ -34,14 +37,14 @@ export default function PhotosSection({ today, initialPhotos }: { today: string;
       fd.set("label", label);
       const r = await fetch("/api/photos", { method: "POST", body: fd });
       const j = await r.json();
-      if (!r.ok) setMsg(j.error ?? "Não foi possível enviar a foto.");
+      if (!r.ok) setMsg(j.error ?? "photo.uploadError");
       else {
-        setMsg("Foto enviada!");
+        setMsg("photo.uploaded");
         setLabel("");
         await reload();
       }
     } catch {
-      setMsg("Falha ao enviar. Tente novamente.");
+      setMsg("photo.uploadFail");
     } finally {
       setBusy(false);
       setTimeout(() => setMsg(""), 2000);
@@ -64,23 +67,23 @@ export default function PhotosSection({ today, initialPhotos }: { today: string;
     <section className="space-y-4">
       <div className="flex items-center gap-2">
         <Camera size={18} className="text-emerald-600 dark:text-emerald-400" />
-        <h2 className="text-xl font-bold">Fotos de progresso</h2>
+        <h2 className="text-xl font-bold">{t("photo.title")}</h2>
         <span className="ml-auto flex items-center gap-1 text-xs text-slate-400">
-          <Columns2 size={14} /> selecione 2 para comparar
+          <Columns2 size={14} /> {t("photo.compareHint")}
         </span>
       </div>
 
       <div className="card flex flex-wrap items-end gap-3 p-4">
         <div>
-          <label className="label">Data</label>
+          <label className="label">{t("mp.date")}</label>
           <input type="date" className="input !w-auto" value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
         <div className="min-w-40 flex-1">
-          <label className="label">Anotação (opcional)</label>
-          <input className="input" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Ex.: início do ciclo" />
+          <label className="label">{t("photo.note")}</label>
+          <input className="input" value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t("photo.notePh")} />
         </div>
         <label className={`btn-primary cursor-pointer ${busy ? "opacity-60" : ""}`}>
-          <Upload size={16} /> {busy ? "Enviando..." : "Enviar foto"}
+          <Upload size={16} /> {busy ? "photo.uploading" : "photo.upload"}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -128,7 +131,7 @@ export default function PhotosSection({ today, initialPhotos }: { today: string;
                       e.stopPropagation();
                       remove(p.id);
                     }}
-                    aria-label="Excluir foto"
+                    aria-label={t("photo.delete")}
                   >
                     <Trash2 size={13} />
                   </button>

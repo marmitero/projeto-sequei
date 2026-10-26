@@ -8,10 +8,12 @@ import SharePanel from "./SharePanel";
 import { getUser, toProfile, getSessionAccount } from "@/lib/session";
 import { PageHeader } from "@/components/ui";
 import { desc, eq, isNull } from "drizzle-orm";
+import { getT } from "@/lib/i18n-server";
 import { db } from "@/db";
 import { planShares } from "@/db/schema";
 
 export default async function PerfilPage() {
+  const t = await getT();
   const user = await getUser();
   const shares = user
     ? await db
@@ -24,7 +26,7 @@ export default async function PerfilPage() {
   const account = await getSessionAccount();
   return (
     <>
-      <PageHeader title="Meu perfil" subtitle="Altere qualquer resposta: metas, cardápio, treino e hidratação são recalculados na hora." icon={<UserRound size={22} />} action={<ResetButton />} />
+      <PageHeader title={t("pages.profile")} subtitle={t("pages.profileSub")} icon={<UserRound size={22} />} action={<ResetButton />} />
       <div className="mb-6">
         <AccountPanel email={account?.email ?? null} />
         <div className="mt-4">

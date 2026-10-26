@@ -1,6 +1,7 @@
 import { LineChart as LineIcon } from "lucide-react";
 import { getContext, allMetrics, foodsBetween, waterBetween, workoutsBetween } from "@/lib/data";
 import { desc, eq } from "drizzle-orm";
+import { getT } from "@/lib/i18n-server";
 import { db } from "@/db";
 import { progressPhotos } from "@/db/schema";
 import { addDays } from "@/lib/calc";
@@ -13,6 +14,7 @@ import GoalCoachPanel from "./GoalCoachPanel";
 import { coachRecommendations, type CoachDay } from "@/lib/goalcoach";
 
 export default async function MetricasPage() {
+  const t = await getT();
   const { user, profile, targets, today } = await getContext();
   const from = addDays(today, -27);
   const [ms, foods, water, workouts] = await Promise.all([allMetrics(user.id), foodsBetween(user.id, from, today), waterBetween(user.id, from, today), workoutsBetween(user.id, from, today)]);
@@ -74,7 +76,7 @@ export default async function MetricasPage() {
 
   return (
     <>
-      <PageHeader title="Métricas" subtitle="Acompanhe peso, medidas e composição corporal. Seu peso atualiza as metas automaticamente." icon={<LineIcon size={22} />} />
+      <PageHeader title={t("nav.metrics")} subtitle={t("pages.metricsSub")} icon={<LineIcon size={22} />} />
       <div className="space-y-8">
         <GoalCoachPanel recs={recs} hasOverrides={!!user.targetOverrides && Object.keys(user.targetOverrides).length > 0} />
         <WeeklySection report={report} />

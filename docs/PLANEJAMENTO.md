@@ -48,7 +48,7 @@ Documento de produto/engenharia baseado no que **existe hoje** (ver [FUNCIONALID
 12. **Sem integrações** (Google Fit / Apple Health / relógios) — peso, passos e treinos entram manualmente.
 13. **Sem fotos de progresso** e comparação corporal (medidas já são coletadas).
 14. **Sem modo escuro** e sem acessibilidade auditada (foco em modais, ARIA).
-15. **i18n fixa pt-BR** (hoje é decisão consciente; limita alcance).
+15. **i18n fixa pt-BR** ✅ **resolvido em 2026-10-26** — pt/en/fr/es/zh via cookie `fitvida-lang` (ver [FUNCIONALIDADES.md §13](./FUNCIONALIDADES.md)); catálogo/planos seguem PT-BR por decisão.
 16. **Sem multiusuário/admin** (nutricionista acompanhando alunos, plano familiar).
 
 ### Lacunas técnicas complementares
@@ -89,7 +89,7 @@ Corrigir os 8 erros de lint; env-driven config + build sem banco; renomear packa
 > **Limitações honestas (futuro):** notificações só funcionam com o app aberto (Web Push/VAPID com service worker exige servidor de push — fora do escopo); integração Google Fit/Apple Health é por arquivo (OAuth das APIs exige credenciais/configuração do usuário); o critério retenção D30 e o streak médio ≥ 5 dias são métricas de produto — deriváveis dos dados (`daily streaks` em `src/lib/gamification.ts`), mas não mensuráveis no ambiente de teste. Envio do relatório semanal por push/e-mail permanece pendente (mencionado na Fase 2).
 
 ### Fase 4 — Escala (contínuo) 🟡 **primeira leva concluída em 2026-10-25**
-- Planos compartilhados (nutricionista ↔ aluno), família; i18n; receitas da comunidade; ajuste de metas por IA com base na aderência real; apps nativos se houver tração.
+- Planos compartilhados (nutricionista ↔ aluno) ✅; receitas da comunidade ✅; ajuste inteligente de metas ✅ (determinístico, sem IA); **i18n pt/en/fr/es/zh ✅ (2026-10-26)**; **grupo de família com conta vinculada — em andamento**; apps nativos se houver tração.
 
 > **Status (leva implementada):**
 > - **Planos compartilhados** ✅ — links somente-leitura (`plan_shares`, migração `0003`): criação/cópia/revogação em `/perfil`; página pública `/compartilhar/[token]` com resumo, metas, plano semanal, últimos 7 dias e evolução de peso. Cobre nutricionista ↔ aluno **e** acompanhamento familiar pelo mesmo mecanismo.
@@ -97,7 +97,7 @@ Corrigir os 8 erros de lint; env-driven config + build sem banco; renomear packa
 > - **Ajuste de metas com base na aderência real** ✅ — motor **determinístico de regras** (`src/lib/goalcoach.ts`, sem LLM externo — nome honesto: "Ajuste inteligente de metas"): compara tendência de peso (≥4 pesagens em ≥14 dias) com a projeção do ritmo, aderência de registro (28 dias), hidratação média e treinos planejados × realizados; recomenda e aplica ajustes finos (±100 kcal; água realista em passos de 250 ml) com pisos/tetos seguros (`clampTargets`: 1200/1500 kcal, 1500–6000 ml). Overrides em `users.target_overrides` aplicados em `getContext` ("Restaurar metas automáticas" volta ao cálculo). UI em `/metricas`.
 > - 121/121 testes (63 unit + 58 e2e) — ver [TESTES.md §15](./TESTES.md).
 >
-> **Fora desta leva (futuro, com justificativa):** **i18n** (exige decisão de idiomas-alvo e extração completa das ~500 strings PT-BR — refactor transversal que merece rodada própria); **grupos de família com contas vinculadas** (além do compartilhamento por link, exige convites/permissões — design de produto); **apps nativos** (exigem contas de loja/tração — como previsto no plano); **IA com modelo externo** (LLM requer credenciais/APIs de terceiras fora do sandbox; o motor atual é auditável e offline); envio de relatório por push/e-mail segue pendente desde a Fase 2/3 (Web Push).
+> **Fora desta leva (futuro, com justificativa):** **apps nativos** (exigem contas de loja/tração); **IA com modelo externo** — **abortada por decisão do usuário (2026-10-26): tudo programático/determinístico, sem LLMs ou APIs externas**; envio de relatório por push/e-mail segue pendente desde a Fase 2/3 (Web Push). i18n e família com conta vinculada entraram na leva de 2026-10-26.
 
 ## 5. Riscos e decisões
 

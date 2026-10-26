@@ -5,14 +5,15 @@ import { Plus, Trash2, Clock, Info, GlassWater, CupSoda, Coffee, Milk } from "lu
 import { addWater, deleteWater } from "@/app/actions";
 import { ageFrom, formatDateBR, weekdayOf, type Profile } from "@/lib/calc";
 import { BarChart, fmt } from "@/components/ui";
+import { useT, useLocale, type TFn } from "@/lib/i18n";
 
 const QUICK = [
-  { ml: 150, label: "Copo pequeno", icon: Coffee },
-  { ml: 250, label: "Copo", icon: GlassWater },
-  { ml: 350, label: "Caneca", icon: Milk },
-  { ml: 500, label: "Garrafa", icon: CupSoda },
+  { ml: 150, label: "water.cupSmall", icon: Coffee },
+  { ml: 250, label: "water.cup", icon: GlassWater },
+  { ml: 350, label: "water.mug", icon: Milk },
+  { ml: 500, label: "water.bottle", icon: CupSoda },
 ];
-const SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const SHORT = ["dayShort.sun", "dayShort.mon", "dayShort.tue", "dayShort.wed", "dayShort.thu", "dayShort.fri", "dayShort.sat"];
 
 const toMin = (t: string) => {
   const [h, m] = t.split(":").map(Number);
@@ -39,6 +40,8 @@ export default function WaterTracker({
   todayLogs: { id: number; ml: number; at: string }[];
   days: { date: string; ml: number }[];
 }) {
+  const t = useT();
+  const locale = useLocale();
   const [pending, start] = useTransition();
   const [custom, setCustom] = useState("");
   const [nowMin, setNowMin] = useState<number | null>(null);
@@ -51,8 +54,8 @@ export default function WaterTracker({
       setNowMin(toMin(parts));
     };
     calc();
-    const t = setInterval(calc, 60000);
-    return () => clearInterval(t);
+    const timer = setInterval(calc, 60000);
+    return () => clearInterval(timer);
   }, [timezone]);
 
   const schedule = useMemo(() => {
@@ -63,30 +66,38 @@ export default function WaterTracker({
     const span = Math.max(end - wake, 6 * 60);
     const n = Math.min(Math.max(Math.round(span / 90), 6), 12);
     const per = Math.round(goal / n / 10) * 10;
-    const items: { time: string; minute: number; ml: number; cumulative: number; note: string }[] = [];
+    const items: { time: string; minute: number; ml: number; cumulative: number; noteKey: string }[] = [];
     for (let i = 0; i < n; i++) {
-      const t = wake + Math.round((span / (n - 1)) * i);
+      const at = wake + Math.round((span / (n - 1)) * i);
       const ml = i === n - 1 ? goal - per * (n - 1) : per;
       const cumulative = items.reduce((a, x) => a + x.ml, ml);
-      let note = "";
-      if (i === 0) note = "Ao acordar — reidrata após a noite";
+      let noteKey = "";
+      if (i === 0) noteKey = "water.noteWake";
       const trainMin = profile.trainingTime === "manha" ? wake + 90 : profile.trainingTime === "tarde" ? 15 * 60 : 19 * 60;
-      if (extra > 0 && Math.abs(t - trainMin) < span / n / 1.5) note = "Perto do treino — beba em goles durante a sessão";
-      items.push({ time: toHHMM(t), minute: t, ml, cumulative, note });
+      if (extra > 0 && Math.abs(at - trainMin) < span / n / 1.5) noteKey = "water.noteTrain";
+      items.push({ time: toHHMM(at), minute: at, ml, cumulative, noteKey });
     }
     return items;
   }, [profile, goal, extra]);
 
   const age = ageFrom(profile.birthDate);
-  const tips: string[] = [
-    `Base: ${age > 55 ? 30 : 35} ml × ${profile.weightKg} kg${profile.climate === "quente" ? " + 500 ml pelo clima quente" : ""} = ${fmt(base)} ml.`,
+  const tips: { key: string; vars?: Record<string, string | number> }[] = [
+    {
+      key: "water.tipBase",
+      vars: {
+        mlkg: age > 55 ? 30 : 35,
+        kg: profile.weightKg,
+        climate: profile.climate === "quente" ? t("water.tipClimate") : "",
+        total: fmt(base),
+      },
+    },
   ];
-  if (extra) tips.push(`Dia de treino: +${extra} ml (≈500 ml por hora de exercício).`);
-  if (profile.healthConditions.includes("gestante")) tips.push("Gestação: +300 ml incluídos na sua meta.");
-  if (profile.healthConditions.includes("lactante")) tips.push("Amamentação: +700 ml incluídos — beba um copo a cada mamada.");
-  if (profile.healthConditions.includes("renal")) tips.push("⚠ Doença renal: siga a restrição hídrica indicada pelo seu nefrologista.");
-  if (age > 55) tips.push("Com a idade a sede diminui: siga o cronograma mesmo sem sentir sede.");
-  tips.push("Urina amarelo-clara é o melhor sinal de boa hidratação.");
+  if (extra) tips.push({ key: "water.tipWorkout", vars: { ml: extra } });
+  if (profile.healthConditions.includes("gestante")) tips.push({ key: "water.tipPregnant" });
+  if (profile.healthConditions.includes("lactante")) tips.push({ key: "water.tipNursing" });
+  if (profile.healthConditions.includes("renal")) tips.push({ key: "water.tipRenal" });
+  if (age > 55) tips.push({ key: "water.tipSenior" });
+  tips.push({ key: "water.tipUrine" });
 
   const add = (ml: number) => start(() => addWater(today, ml));
   const streak = (() => {
@@ -113,18 +124,18 @@ export default function WaterTracker({
               </div>
             </div>
             <div>
-              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Hoje</div>
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">{t("common.today")}</div>
               <div className="text-4xl font-black tabular-nums text-sky-700 dark:text-sky-300">{(total / 1000).toFixed(2).replace(".", ",")}L</div>
-              <div className="text-sm text-slate-500">meta {(goal / 1000).toFixed(2).replace(".", ",")} L</div>
-              <div className="mt-3 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-800 dark:text-sky-300">{total >= goal ? "🎉 Meta batida!" : `Faltam ${fmt(goal - total)} ml`}</div>
-              {streak > 0 && <div className="mt-2 text-sm font-semibold text-orange-600">🔥 {streak} dia(s) seguidos na meta</div>}
+              <div className="text-sm text-slate-500">{t("water.goal", { l: (goal / 1000).toFixed(2).replace(".", ",") })}</div>
+              <div className="mt-3 rounded-xl bg-sky-50 px-3 py-2 text-sm text-sky-800 dark:text-sky-300">{total >= goal ? t("water.goalHit") : t("water.remaining", { ml: fmt(goal - total) })}</div>
+              {streak > 0 && <div className="mt-2 text-sm font-semibold text-orange-600">🔥 {t("water.streak", { n: streak })}</div>}
             </div>
           </div>
         </div>
 
         {/* Registro rápido */}
         <div className="card p-5 sm:p-6 lg:col-span-3">
-          <h2 className="mb-3 font-bold">Registro rápido</h2>
+          <h2 className="mb-3 font-bold">{t("water.quickLog")}</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {QUICK.map((q) => {
               const Icon = q.icon;
@@ -132,13 +143,13 @@ export default function WaterTracker({
                 <button key={q.ml} disabled={pending} onClick={() => add(q.ml)} className="group flex flex-col items-center gap-1 rounded-2xl border-2 border-sky-100 bg-sky-50/50 p-4 transition hover:border-sky-400 hover:bg-sky-50 active:scale-95">
                   <Icon size={26} className="text-sky-500 transition group-hover:scale-110" />
                   <span className="text-lg font-bold text-sky-800 dark:text-sky-300">{q.ml} ml</span>
-                  <span className="text-xs text-slate-500">{q.label}</span>
+                  <span className="text-xs text-slate-500">{t(q.label)}</span>
                 </button>
               );
             })}
           </div>
           <div className="mt-3 flex gap-2">
-            <input type="number" inputMode="numeric" className="input" placeholder="Outro volume (ml)" value={custom} onChange={(e) => setCustom(e.target.value)} />
+            <input type="number" inputMode="numeric" className="input" placeholder={t("water.otherVolume")} value={custom} onChange={(e) => setCustom(e.target.value)} />
             <button
               className="btn-primary shrink-0"
               disabled={!custom || pending}
@@ -147,17 +158,17 @@ export default function WaterTracker({
                 setCustom("");
               }}
             >
-              <Plus size={16} /> Adicionar
+              <Plus size={16} /> {t("common.add")}
             </button>
           </div>
           {todayLogs.length > 0 && (
             <div className="mt-4">
-              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Registros de hoje</div>
+              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">{t("water.todayLogs")}</div>
               <div className="flex flex-wrap gap-2">
                 {todayLogs.map((l) => (
                   <span key={l.id} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 py-1 pl-3 pr-1 text-sm">
                     {new Date(l.at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: timezone })} · {l.ml} ml
-                    <button className="rounded-full p-1 text-slate-400 hover:bg-rose-100 hover:text-rose-600 dark:text-rose-400" onClick={() => start(() => deleteWater(l.id))} aria-label="Remover">
+                    <button className="rounded-full p-1 text-slate-400 hover:bg-rose-100 hover:text-rose-600 dark:text-rose-400" onClick={() => start(() => deleteWater(l.id))} aria-label={t("common.remove")}>
                       <Trash2 size={12} />
                     </button>
                   </span>
@@ -172,11 +183,9 @@ export default function WaterTracker({
         {/* Cronograma */}
         <div className="card p-5 sm:p-6">
           <h2 className="mb-1 flex items-center gap-2 font-bold">
-            <Clock size={18} className="text-sky-500" /> Seu cronograma de hoje
+            <Clock size={18} className="text-sky-500" /> {t("water.schedule")}
           </h2>
-          <p className="mb-4 text-xs text-slate-500">
-            Do seu despertar ({profile.wakeTime}) até 1 h antes de dormir ({profile.sleepTime}).
-          </p>
+          <p className="mb-4 text-xs text-slate-500">{t("water.scheduleSub", { wake: profile.wakeTime, sleep: profile.sleepTime })}</p>
           <ol className="relative space-y-2 border-l-2 border-sky-100 pl-5">
             {schedule.map((s, i) => {
               const done = total >= s.cumulative;
@@ -189,9 +198,9 @@ export default function WaterTracker({
                     <div>
                       <span className="font-mono text-sm font-bold">{s.time}</span>
                       <span className={`ml-2 text-sm ${done ? "text-emerald-700 dark:text-emerald-300 line-through decoration-emerald-300" : "text-slate-700"}`}>{s.ml} ml</span>
-                      {s.note && <div className="text-[11px] text-slate-500">{s.note}</div>}
+                      {s.noteKey && <div className="text-[11px] text-slate-500">{t(s.noteKey)}</div>}
                     </div>
-                    {done ? <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">✓ feito</span> : isNow ? <button className="btn-primary !px-2.5 !py-1 text-xs" onClick={() => add(s.ml)}>Beber agora</button> : late ? <span className="text-xs text-amber-600 dark:text-amber-400">atrasado</span> : null}
+                    {done ? <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">✓ {t("water.done")}</span> : isNow ? <button className="btn-primary !px-2.5 !py-1 text-xs" onClick={() => add(s.ml)}>{t("water.drinkNow")}</button> : late ? <span className="text-xs text-amber-600 dark:text-amber-400">{t("water.late")}</span> : null}
                   </div>
                 </li>
               );
@@ -201,19 +210,19 @@ export default function WaterTracker({
 
         <div className="space-y-4">
           <div className="card p-5 sm:p-6">
-            <h2 className="mb-2 font-bold">Últimos 7 dias</h2>
-            <BarChart data={days.map((d) => ({ x: SHORT[weekdayOf(d.date)], y: d.ml }))} target={goal} unit=" ml" />
+            <h2 className="mb-2 font-bold">{t("water.last7")}</h2>
+            <BarChart data={days.map((d) => ({ x: t(SHORT[weekdayOf(d.date)]), y: d.ml }))} target={goal} unit=" ml" />
             <div className="mt-2 text-center text-xs text-slate-500">
-              Média: {fmt(days.reduce((a, d) => a + d.ml, 0) / 7)} ml/dia · barras verdes = meta atingida · {formatDateBR(days[0].date)} a {formatDateBR(days[6].date)}
+              {t("water.avg", { ml: fmt(days.reduce((a, d) => a + d.ml, 0) / 7) })} · {t("water.greenHint")} · {formatDateBR(days[0].date, { day: "2-digit", month: "short" }, locale)} {t("common.to")} {formatDateBR(days[6].date, { day: "2-digit", month: "short" }, locale)}
             </div>
           </div>
           <div className="card p-5 sm:p-6">
             <h2 className="mb-2 flex items-center gap-2 font-bold">
-              <Info size={18} className="text-sky-500" /> Como calculamos sua meta
+              <Info size={18} className="text-sky-500" /> {t("water.howCalc")}
             </h2>
             <ul className="space-y-1.5 text-sm text-slate-600">
-              {tips.map((t) => (
-                <li key={t}>• {t}</li>
+              {tips.map((tip) => (
+                <li key={tip.key}>• {t(tip.key, tip.vars)}</li>
               ))}
             </ul>
           </div>

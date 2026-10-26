@@ -3,6 +3,7 @@
 import { randomBytes } from "node:crypto";
 import { cookies, headers } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { getT } from "@/lib/i18n-server";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { users, accounts, foodLogs, waterLogs, workoutLogs, metrics, customFoods, favorites, communityRecipes, communityRecipeLikes, planShares, type WorkoutExercise } from "@/db/schema";
@@ -16,9 +17,10 @@ import { rateLimit } from "@/lib/ratelimit";
 import { mapOpenFoodFacts } from "@/lib/barcode";
 import { normalizeRecipeInput } from "@/lib/community";
 
-async function requireUser() {
+async function requireUser() {  const t = await getT();
+
   const user = await getUser();
-  if (!user) throw new Error("Perfil não encontrado");
+  if (!user) throw new Error(t("err.profileNotFound"));
   return user.id;
 }
 
@@ -111,16 +113,17 @@ async function clientKey(prefix: string) {
 }
 
 export async function registerAccount(email: string, password: string): Promise<{ ok: boolean; error?: string; fituid?: string | null; session?: string }> {
+  const t = await getT();
   const mail = normalizeEmail(email);
-  if (!isValidEmail(mail)) return { ok: false, error: "E-mail inválido." };
+  if (!isValidEmail(mail)) return { ok: false, error: t("auth.invalidEmail") };
   const pwdError = validatePassword(password);
   if (pwdError) return { ok: false, error: pwdError };
   const ipKey = await clientKey("register");
   if (!rateLimit(`register:${mail}`, 3, 10 * 60_000) || !rateLimit(ipKey, 30, 10 * 60_000)) {
-    return { ok: false, error: "Muitas tentativas. Aguarde alguns minutos." };
+    return { ok: false, error: t("auth.rateLimited") };
   }
   const existing = await db.select({ id: accounts.id }).from(accounts).where(eq(accounts.email, mail)).limit(1);
-  if (existing.length) return { ok: false, error: "E-mail já cadastrado. Faça login." };
+  if (existing.length) return { ok: false, error: t("auth.emailTaken") };
 
   const r = await db.insert(accounts).values({ email: mail, passwordHash: hashPassword(password) }).returning({ id: accounts.id });
   const accountId = r[0].id;
@@ -139,15 +142,16 @@ export async function registerAccount(email: string, password: string): Promise<
 }
 
 export async function loginAccount(email: string, password: string): Promise<{ ok: boolean; error?: string; fituid?: string | null; session?: string }> {
+  const t = await getT();
   const mail = normalizeEmail(email);
   const ipKey = await clientKey("login");
   if (!rateLimit(`login:${mail}`, 10, 5 * 60_000) || !rateLimit(ipKey, 60, 5 * 60_000)) {
-    return { ok: false, error: "Muitas tentativas de login. Aguarde alguns minutos." };
+    return { ok: false, error: t("auth.rateLimited") };
   }
   const rows = await db.select().from(accounts).where(eq(accounts.email, mail)).limit(1);
   const account = rows[0];
   if (!account || !verifyPassword(String(password ?? ""), account.passwordHash)) {
-    return { ok: false, error: "E-mail ou senha incorretos." };
+    return { ok: false, error: t("auth.badCredentials") };
   }
   const session = await startSession(account.id);
 
@@ -176,6 +180,7 @@ export async function logoutAccount() {
 }
 
 export async function resetAccount() {
+  const t = await getT();
   const user = await getUser();
   if (user) await db.delete(users).where(eq(users.id, user.id));
   const store = await cookies();
@@ -196,22 +201,23 @@ export type FoodEntryInput = {
   custom?: { name: string; kcal: number; protein: number; carbs: number; fat: number; fiber?: number };
 };
 
-function buildEntry(userId: string, e: FoodEntryInput) {
-  if (!isDate(e.date)) throw new Error("Data inválida");
+function buildEntry(userId: string, e: FoodEntryInput, t: (k: string) => string) {
+
+  if (!isDate(e.date)) throw new Error(t("err.invalidDate"));
   const base = { userId, date: e.date, meal: e.meal, portionLabel: (e.portionLabel ?? "").slice(0, 80) };
   if (e.customId) {
     // resolvido em addFoodEntries (precisa de query); nunca chega aqui sozinho
-    throw new Error("Entrada inválida");
+    throw new Error(t("err.invalidInput"));
   }
   if (e.foodKey) {
     const f = FOOD_MAP[e.foodKey];
-    if (!f) throw new Error("Alimento não encontrado");
+    if (!f) throw new Error(t("err.foodNotFound"));
     const grams = num(e.grams, 1, 3000, 100);
     return { ...base, foodKey: f.key, name: f.name, grams, ...macrosFor(f, grams) };
   }
   if (e.recipeKey) {
     const r = RECIPES.find((x) => x.key === e.recipeKey);
-    if (!r) throw new Error("Receita não encontrada");
+    if (!r) throw new Error(t("err.recipeNotFound"));
     const n = recipeNutrition(r);
     const s = num(e.servings, 0.25, 10, 1);
     return {
@@ -239,10 +245,11 @@ function buildEntry(userId: string, e: FoodEntryInput) {
       fiber: num(e.custom.fiber, 0, 200, 0),
     };
   }
-  throw new Error("Entrada inválida");
+  throw new Error(t("err.invalidInput"));
 }
 
 export async function addFoodEntries(entries: FoodEntryInput[]) {
+  const t = await getT();
   const userId = await requireUser();
   const list = entries.slice(0, 30);
   if (!list.length) return;
@@ -255,8 +262,8 @@ export async function addFoodEntries(entries: FoodEntryInput[]) {
   const values = list.map((e) => {
     if (e.customId) {
       const c = customMap.get(e.customId);
-      if (!c) throw new Error("Alimento não encontrado");
-      if (!isDate(e.date)) throw new Error("Data inválida");
+      if (!c) throw new Error(t("err.foodNotFound"));
+      if (!isDate(e.date)) throw new Error(t("err.invalidDate"));
       const s = num(e.servings, 0.25, 20, 1);
       return {
         userId,
@@ -272,7 +279,7 @@ export async function addFoodEntries(entries: FoodEntryInput[]) {
         fiber: +(c.fiber * s).toFixed(1),
       };
     }
-    return buildEntry(userId, e);
+    return buildEntry(userId, e, t);
   });
   await db.insert(foodLogs).values(values);
   done();
@@ -399,10 +406,11 @@ export type ImportPayload = {
 };
 
 export async function importData(payload: ImportPayload): Promise<{ ok: boolean; error?: string; imported?: Record<string, number> }> {
+  const t = await getT();
   const userId = await requireUser();
   const key = await clientKey("import");
   if (!rateLimit(key, 10, 60_000)) return { ok: false, error: "Muitas importações. Aguarde um pouco." };
-  if (!payload || typeof payload !== "object") return { ok: false, error: "Arquivo inválido." };
+  if (!payload || typeof payload !== "object") return { ok: false, error: t("err.invalidFile") };
 
   const imported: Record<string, number> = {};
   const cap = <T>(a: T[] | undefined) => (Array.isArray(a) ? a.slice(0, 5000) : []);
@@ -498,6 +506,7 @@ export type CustomFoodInput = {
 };
 
 export async function saveCustomFood(input: CustomFoodInput): Promise<{ ok: boolean; id?: number; error?: string }> {
+  const t = await getT();
   const userId = await requireUser();
   const values = {
     name: String(input.name ?? "").slice(0, 80).trim() || "Alimento",
@@ -515,7 +524,7 @@ export async function saveCustomFood(input: CustomFoodInput): Promise<{ ok: bool
       .set(values)
       .where(and(eq(customFoods.id, input.id), eq(customFoods.userId, userId)))
       .returning({ id: customFoods.id });
-    if (!r.length) return { ok: false, error: "Alimento não encontrado." };
+    if (!r.length) return { ok: false, error: t("err.foodNotFound") };
     done();
     return { ok: true, id: r[0].id };
   }
@@ -586,11 +595,12 @@ export async function copyMeal(fromDate: string, toDate: string, meal: string): 
 
 // ---------- Código de barras (Open Food Facts) ----------
 export async function lookupBarcode(code: string): Promise<{ ok: boolean; error?: string; product?: { name: string; kcal: number; protein: number; carbs: number; fat: number; fiber: number } }> {
+  const t = await getT();
   await requireUser();
   const c = String(code ?? "").trim();
-  if (!/^\d{6,14}$/.test(c)) return { ok: false, error: "Código de barras inválido." };
+  if (!/^\d{6,14}$/.test(c)) return { ok: false, error: t("err.badBarcode") };
   const key = await clientKey("barcode");
-  if (!rateLimit(key, 30, 60_000)) return { ok: false, error: "Muitas consultas. Aguarde um pouco." };
+  if (!rateLimit(key, 30, 60_000)) return { ok: false, error: t("err.rateLimitedApi") };
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 6000);
@@ -599,12 +609,12 @@ export async function lookupBarcode(code: string): Promise<{ ok: boolean; error?
       headers: { "User-Agent": "FitVida/0.1 (acompanhamento fitness)" },
     });
     clearTimeout(timer);
-    if (!res.ok) return { ok: false, error: "Produto não encontrado." };
+    if (!res.ok) return { ok: false, error: t("err.productNotFound") };
     const product = mapOpenFoodFacts(await res.json());
-    if (!product) return { ok: false, error: "Produto sem informações nutricionais utilizáveis." };
+    if (!product) return { ok: false, error: t("err.productNoNutrition") };
     return { ok: true, product };
   } catch {
-    return { ok: false, error: "Consulta indisponível agora (sem conexão com a base de produtos)." };
+    return { ok: false, error: t("err.apiUnavailable") };
   }
 }
 
